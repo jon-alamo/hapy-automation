@@ -3,6 +3,7 @@ import importlib
 import logging
 from .discovered import devices
 from .discovered import entities
+from .discovered import reference
 from . import discover_devices
 from . import discover_entities
 
@@ -19,9 +20,16 @@ if ha_url and ha_token:
     discover_entities.run(location=os.path.dirname(entities_path))
     devices = importlib.reload(module=devices)
     entities = importlib.reload(module=entities)
+    reference = importlib.reload(module=reference)
 
 else:
     logger.warning(
         "No hearing assessment instance found. Please define HA_URL and "
         "HA_TOKEN and reload the ha_control module."
     )
+
+def get_entities():
+    return {
+        entity['name']: getattr(entities, entity['name'])
+        for entity in reference.entities.keys()
+    }

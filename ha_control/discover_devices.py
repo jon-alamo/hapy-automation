@@ -37,13 +37,13 @@ def write_devices_module(entities, module_path):
             f.write(entity)
 
 
-def write_devices_reference(entities, reference_module):
+def write_devices_reference(devices, reference_module):
     with open(reference_module, 'w') as f:
         f.write(f'# Home Assistant devices at {str(datetime.datetime.now())}\n\n\n')
         reference = {
-            entity['id']: class_writer.pythonize(entity['name_by_user'])
-            for entity in entities
-            if 'name_by_user' in entity and entity['name_by_user']
+            device['id']: class_writer.pythonize(device['name_by_user'])
+            for device in devices
+            if 'name_by_user' in device and device['name_by_user']
         }
         pp = pprint.PrettyPrinter(indent=4)
         f.write(f'devices = {{\n{pp.pformat(reference)[1:-1]}\n}}')

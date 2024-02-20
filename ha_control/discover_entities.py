@@ -1,9 +1,12 @@
 import os
 import datetime
+import pprint
 import dotenv
+import importlib
 from . import ha_websocket, class_writer
 from .discovered import reference
 
+reference = importlib.reload(reference)
 
 dotenv.load_dotenv()
 
@@ -40,6 +43,20 @@ def parse_entities(entities):
         )
         class_def += add_device_reference(entity)
         yield class_def
+
+
+def write_entities_reference(entities, reference_module):
+    devices = reference.devices
+    with open(reference_module, 'w') as f:
+        f.write(f'# Home Assistant devices at {str(datetime.datetime.now())}\n\n\n')
+        new_ref = {
+            entity['id']: class_writer.pythonize(entity['name'])
+            for entity in entities
+            if 'name' in entity and entity['name']
+        }
+        pp = pprint.PrettyPrinter(indent=4)
+        f.write(f'devices = {{\n{pp.pformat(devices)[1:-1]}\n}}')
+        f.write(f'entities = {{\n{pp.pformat(new_ref)[1:-1]}\n}}')
 
 
 def write_entities_module(entities, module_path):
