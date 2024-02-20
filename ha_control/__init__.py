@@ -30,5 +30,6 @@ else:
 
 def get_entities():
     return {
-        name: getattr(entities, name) for name in reference.entities.keys()
+        name: getattr(entities, name)
+        for name in reference.entities.values() if hasattr(entities, name)
     }
