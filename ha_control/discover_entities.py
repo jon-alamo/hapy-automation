@@ -10,7 +10,7 @@ reference = importlib.reload(reference)
 
 dotenv.load_dotenv()
 
-LOCATION = 'discovered'
+LOCATION = os.path.dirname(__file__)
 
 
 date = str(datetime.datetime.now())
@@ -69,8 +69,9 @@ def write_entities_module(entities, module_path):
 def run(location=LOCATION):
     response = ha_websocket.get_entities()
     entities_module = os.path.join(location, 'entities.py')
+    reference_module = os.path.join(location, 'reference.py')
     write_entities_module(response['result'], entities_module)
-
+    write_entities_reference(response['result'], reference_module)
 
 if __name__ == '__main__':
     run()

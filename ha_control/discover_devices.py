@@ -6,7 +6,7 @@ from . import ha_websocket, class_writer
 
 dotenv.load_dotenv()
 
-LOCATION = 'discovered'
+LOCATION = os.path.dirname(__file__)
 
 
 DEVICE_MODULE_TMPL = f"""
