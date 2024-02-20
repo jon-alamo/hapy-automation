@@ -56,7 +56,7 @@ def write_entities_reference(entities, reference_module):
         }
         pp = pprint.PrettyPrinter(indent=4)
         f.write(f'devices = {{\n{pp.pformat(devices)[1:-1]}\n}}')
-        f.write(f'entities = {{\n{pp.pformat(new_ref)[1:-1]}\n}}')
+        f.write(f'\n\n\nentities = {{\n{pp.pformat(new_ref)[1:-1]}\n}}')
 
 
 def write_entities_module(entities, module_path):
