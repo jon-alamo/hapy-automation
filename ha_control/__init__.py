@@ -30,6 +30,5 @@ else:
 
 def get_entities():
     return {
-        entity['name']: getattr(entities, entity['name'])
-        for entity in reference.entities.keys()
+        name: getattr(entities, name) for name in reference.entities.keys()
     }
