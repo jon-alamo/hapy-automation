@@ -5,7 +5,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-HA_URL = os.getenv('HA_URL')
+HA_URL = os.getenv('HA_URL', '')
 HA_URL = HA_URL.replace('https://', '').replace('http://', '')
 WS_API_URL = f"ws://{HA_URL}/api/websocket"
 
@@ -68,7 +68,7 @@ def get_message(message_type, **kwargs):
 def send_auth_message(ws):
     auth_message = {
         "type": "auth",
-        "access_token": os.getenv('HA_TOKEN')
+        "access_token": os.getenv('HA_TOKEN', '')
     }
     return ws.send(json.dumps(auth_message))
 

@@ -12,8 +12,8 @@ logger = logging.getLogger('ha_control')
 devices_path = devices.__file__
 entities_path = devices.__file__
 
-ha_url = os.getenv('HA_URL')
-ha_token = os.getenv('HA_TOKEN')
+ha_url = os.getenv('HA_URL', '')
+ha_token = os.getenv('HA_TOKEN', '')
 
 if ha_url and ha_token:
     discover_devices.run(location=os.path.dirname(devices_path))

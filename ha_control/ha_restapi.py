@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-token = os.getenv('HA_TOKEN')
-HA_URL = os.getenv('HA_URL')
+token = os.getenv('HA_TOKEN', '')
+HA_URL = os.getenv('HA_URL', '')
 base_url = f'{HA_URL}/api'
 
 auth_headers = {
