@@ -16,6 +16,7 @@ auth_headers = {
 
 endpoints = {
     # GET
+    'entities': 'entities/',
     'config': 'config',
     'events': 'events',
     'services': 'services',
@@ -46,3 +47,18 @@ def api_request(url, method='get', data=None):
 def get_state(entity_id):
     url = f'{base_url}/{endpoints["entity_state"].format(entity_id=entity_id)}'
     return api_request(url)
+
+
+def get_states():
+    url = f'{base_url}/{endpoints["states"]}'
+    return api_request(url)
+
+
+def get_services():
+    url = f'{base_url}/{endpoints["services"]}'
+    return api_request(url)
+
+
+def call_service(domain, service, data):
+    url = f'{base_url}/{endpoints["service"].format(domain=domain, service=service)}'
+    return api_request(url, method='post', data=data)
