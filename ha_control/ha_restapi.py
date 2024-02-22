@@ -38,7 +38,8 @@ endpoints = {
 
 
 def api_request(url, method='get', data=None):
-    response = requests.get(url, json=data, headers=auth_headers)
+    method = getattr(requests, method)
+    response = method(url, json=data, headers=auth_headers)
     if 200 <= response.status_code < 300:
         return response.json()
     return response.json()

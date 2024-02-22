@@ -1,10 +1,10 @@
 import os
-
+import ha_control.helpers as helpers
 
 entity_keys = {
     'id': ['entity_id'],
     'unique_id': ['unique_id'],
-    'name': ['name', 'friendly_name'],
+    'name': ['name', 'attributes.friendly_name'],
     'device_id': ['device_id'],
     'area_id': ['area_id']
 }
@@ -22,12 +22,23 @@ domain_mapping = {
 }
 
 
+def find_value(data, key):
+    if key in data:
+        return data[key]
+    keys = key.split('.')
+    for k in keys:
+        if k in data:
+            return find_value(data[k], '.'.join(keys[1:]))
+        else:
+            return None
+
+
 def populate_dict(source_dict, mapping):
     target_dict = {}
-    for target_key, source_keys in mapping:
+    for target_key, source_keys in mapping.items():
         for source_key in source_keys:
-            if source_key in source_dict:
-                target_dict[target_key] = source_dict[source_key]
+            if value := find_value(source_dict, source_key):
+                target_dict[target_key] = value
                 break
         else:
             target_dict[target_key] = None
@@ -39,28 +50,11 @@ def register_entity(entity_data, register):
         raise ValueError('Entity data must contain an entity_id')
 
     entity_id = entity_data['entity_id']
-    data_piece = {}
 
     if 'entities' not in register:
         register['entities'] = {}
 
-    for target_key, source_keys in entity_keys:
-        for source_key in source_keys:
-            if source_key in entity_data:
-                data_piece[target_key] = entity_data[source_key]
-                break
-        else:
-            data_piece[target_key] = None
-
-    # Register unique id
-    if not data_piece['unique_key'] and entity_id in register['ent2unique']:
-        data_piece['unique_key'] = register['ent2unique'][entity_id]
-    elif entity_id not in register['ent2unique'] and data_piece['unique_key']:
-        register['ent2unique'][entity_id] = data_piece['unique_key']
-
-    # Register unique key
-    if data_piece['unique_key']:
-        register['unique_keys'][data_piece['unique_key']] = entity_id
+    data_piece = populate_dict(entity_data, entity_keys)
 
     # Register entity
     if entity_id not in register['entities']:
@@ -76,14 +70,7 @@ def register_device(device_data, register):
     if 'id' not in device_data:
         return
     device_id = device_data['id']
-    data_piece = {}
-    for target_key, source_keys in device_keys:
-        for source_key in source_keys:
-            if source_key in device_data:
-                data_piece[target_key] = device_data[source_key]
-                break
-        else:
-            data_piece[target_key] = None
+    data_piece = populate_dict(device_data, device_keys)
 
     if 'devices' not in register:
         register['devices'] = {}
@@ -111,4 +98,22 @@ def register_domain(domain_data: dict, register: dict):
 def register_domains(domains: list, register: dict):
     for domain in domains:
         register_domain(domain, register)
+    return register
+
+
+def register_entities(entities: dict, register: dict):
+    for entity in entities['result']:
+        register_entity(entity, register)
+    return register
+
+
+def register_states(states: dict, register: dict):
+    for state in states:
+        register_entity(state, register)
+    return register
+
+
+def register_devices(devices: dict, register: dict):
+    for device in devices['result']:
+        register_device(device, register)
     return register
