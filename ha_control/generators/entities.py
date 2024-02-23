@@ -4,7 +4,7 @@ import ha_control.models as models
 
 entity_tmpl = '\n'.join([
     "import ha_control.models as models",
-    "import {domains_route} as my_domains",
+    "from . import {domains_route} as my_domains",
     "my_ha_instance = models.HAInstance(secret_file='{secret_file}')\n"
 ])
 
