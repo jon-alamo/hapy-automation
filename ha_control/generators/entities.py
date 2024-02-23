@@ -26,7 +26,7 @@ def get_domain(entity_id):
 
 
 def get_instantiate_definition(entity_id, entity_data, register):
-    instance_name = helpers.Pythonize.method_name(entity_id.split('.')[1])
+    instance_name = helpers.Pythonize.method_name(entity_id)
     unique_id = entity_data.get('unique_id', None)
     name = entity_data.get('name', entity_id)
     attributes = entity_data.get('attributes', {})
