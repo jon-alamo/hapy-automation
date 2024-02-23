@@ -65,6 +65,6 @@ def generate_entity_module(register, domains_route, secret_file):
 
 
 def write_entities_module(register, module_path, domains_route, secret_file):
-    with open(module_path, 'w') as f:
+    with open(module_path, 'w', encoding="utf-8") as f:
         f.write(generate_entity_module(register, domains_route, secret_file))
     return module_path

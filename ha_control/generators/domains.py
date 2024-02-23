@@ -1,5 +1,4 @@
 import ha_control.helpers as helpers
-import ha_control.models as models
 
 types = {
     'number': float,
@@ -59,7 +58,7 @@ def generate_service_method(domain_name, service_name, service_data, indent_leve
     fields = generate_fields(service_data['fields'])
     docstring = generate_docstring(service_data, indent_level=indent_level + 1)
     method_lines = [
-        f'{" " * def_indent}def {service_name}({fields}):',
+        f'\n{" " * def_indent}def {service_name}({fields}):',
         docstring
     ]
     return '\n'.join(method_lines)
@@ -89,5 +88,5 @@ def generate_domain_module(register):
 
 def write_domain_module(register, module_path):
     domain_module = generate_domain_module(register)
-    with open(module_path, 'w') as f:
+    with open(module_path, 'w', encoding="utf-8") as f:
         f.write(domain_module)

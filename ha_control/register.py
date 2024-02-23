@@ -131,7 +131,7 @@ def get_registry(instance, directory: None):
     reg_data = register_devices(devices, reg_data)
 
     if directory:
-        with open(f'{directory}/.registry', 'w') as f:
+        with open(f'{directory}/.registry', 'w', encoding="utf-8") as f:
             json.dump(reg_data, f)
 
     return reg_data
