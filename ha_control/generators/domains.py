@@ -23,7 +23,7 @@ def generate_field(field_name, selector, example=None, required=False):
 
 
 def generate_fields(fields_data, is_method=True):
-    fields = ['cls'] if is_method else []
+    fields = ['self'] if is_method else []
     for field_name, field_data in fields_data.items():
         field = generate_field(field_name, field_data)
         fields.append(field)
@@ -57,7 +57,6 @@ def generate_service_method(domain_name, service_name, service_data, indent_leve
     fields = generate_fields(service_data['fields'])
     docstring = generate_docstring(service_data, indent_level=indent_level + 1)
     method_lines = [
-        f'\n{" " * def_indent}@classmethod',
         f'{" " * def_indent}@service_call("{domain_name}")',
         f'{" " * def_indent}def {service_name}({fields}):',
         docstring

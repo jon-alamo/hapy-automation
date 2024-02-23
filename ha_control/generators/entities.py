@@ -8,16 +8,25 @@ def get_domain(entity_id):
     return entity_id.split('.')[0]
 
 
-def generate_entity_class(entity_id: str, entity_data: dict, register: dict):
-    class_name = helpers.Pythonize.class_name(entity_id)
-    class_lines = [
-        f'\n\nclass {class_name}(my_domains.{domain_class}):',
-        f'    entity_id = "{entity_id}"'
-    ]
+def get_class_definition(entity_id, entity_data, register):
+    if 'name' in entity_data and entity_data['name'] not in [None, '', 'None']:
+        class_name = helpers.Pythonize.class_name(entity_data['name'])
+    else:
+        class_name = helpers.Pythonize.class_name(entity_id)
+
     domain_name = entity_id.split('.')[0]
     if domain_name in register['domains']:
         domain_class = helpers.Pythonize.class_name(domain_name)
-        class_lines.append(f'    services = my_domains.{domain_class}')
+        return f'\n\nclass {class_name}(my_domains.{domain_class}):'
+    else:
+        return f'\n\nclass {class_name}:'
+
+
+def generate_entity_class(entity_id: str, entity_data: dict, register: dict):
+    class_lines = [
+        get_class_definition(entity_id, entity_data, register),
+        f'    entity_id = "{entity_id}"'
+    ]
     return '\n'.join(class_lines)
 
 
