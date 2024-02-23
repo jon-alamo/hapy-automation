@@ -20,6 +20,7 @@ def generate_field(field_name, selector, example=None, required=False):
         selector_key = list(selector.keys())[0]
         field_type = types.get(selector_key, str)
     default = '' if required else ' = None'
+    field_name = helpers.Pythonize.parameter_name(field_name)
     return f'{field_name}: {field_type.__name__}' + default
 
 
