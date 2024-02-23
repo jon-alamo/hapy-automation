@@ -33,7 +33,6 @@ endpoints = {
     'event': 'events/{event_type}',
     'service': 'services/{domain}/{service}',
     'template': 'template',
-
 }
 
 

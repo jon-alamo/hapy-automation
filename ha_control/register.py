@@ -1,5 +1,5 @@
-import os
-import ha_control.helpers as helpers
+import json
+
 
 entity_keys = {
     'id': ['entity_id'],
@@ -117,3 +117,21 @@ def register_devices(devices: dict, register: dict):
     for device in devices['result']:
         register_device(device, register)
     return register
+
+
+def get_registry(instance, directory: None):
+    domains = instance.get_services()
+    devices = instance.get_devices()
+    entities = instance.get_entities()
+    states = instance.get_states()
+    reg_data = {}
+    reg_data = register_domains(domains, reg_data)
+    reg_data = register_entities(entities, reg_data)
+    reg_data = register_states(states, reg_data)
+    reg_data = register_devices(devices, reg_data)
+
+    if directory:
+        with open(f'{directory}/.registry', 'w') as f:
+            json.dump(reg_data, f)
+
+    return reg_data

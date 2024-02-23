@@ -49,8 +49,14 @@ class TestFieldGenerator(ut.TestCase):
         domains_module_path = 'ha_control/tests/modules/my_domains.py'
         entities_module_path = 'ha_control/tests/modules/my_entities.py'
         domains.write_domain_module(reg_data, domains_module_path)
+
+        secret_file = 'ha_control/tests/fixtures/.secret'
+        with open(secret_file, 'w') as f:
+            json.dump({'ha_url': 'http://192.168.1.20', 'ha_token': 'momo'}, f)
+
         entities.write_entities_module(
-            reg_data, entities_module_path, domains_route='my_domains'
+            reg_data, entities_module_path, domains_route='my_domains',
+            secret_file=secret_file
         )
         append_path = os.path.dirname(domains_module_path)
         sys.path.append(append_path)

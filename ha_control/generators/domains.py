@@ -1,4 +1,5 @@
 import ha_control.helpers as helpers
+import ha_control.models as models
 
 types = {
     'number': float,
@@ -9,7 +10,7 @@ types = {
 INDENT = 4
 
 
-domain_tmpl = "from ha_control.services import service_call"
+domain_tmpl = "import ha_control.models as models"
 
 
 def generate_field(field_name, selector, example=None, required=False):
@@ -57,7 +58,6 @@ def generate_service_method(domain_name, service_name, service_data, indent_leve
     fields = generate_fields(service_data['fields'])
     docstring = generate_docstring(service_data, indent_level=indent_level + 1)
     method_lines = [
-        f'{" " * def_indent}@service_call("{domain_name}")',
         f'{" " * def_indent}def {service_name}({fields}):',
         docstring
     ]
@@ -71,7 +71,7 @@ def generate_domain_mixin(domain_name, domain_data):
         for service_name, service_data in domain_data.items()
     ]
     mixing_lines = [
-        f'\n\nclass {class_name}:'
+        f'\n\nclass {class_name}(models.Domain):'
     ]
     return '\n'.join(mixing_lines + service_methods)
 
