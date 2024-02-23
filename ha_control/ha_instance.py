@@ -85,7 +85,7 @@ class HAInstance:
     def _authenticate(self):
         auth_message = {
             "type": "auth",
-            "access_token": os.getenv('HA_TOKEN', '')
+            "access_token": self._ha_token
         }
         self._socket.send(json.dumps(auth_message))
         self._socket.recv()
