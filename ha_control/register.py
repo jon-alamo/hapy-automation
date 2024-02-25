@@ -1,10 +1,15 @@
 import json
+import zhaquirks
+import pkgutil
+import importlib
+import inspect
 
 
 entity_keys = {
     'id': ['entity_id'],
     'unique_id': ['unique_id'],
     'name': ['name', 'attributes.friendly_name'],
+    'attributes': ['attributes'],
     'device_id': ['device_id'],
     'area_id': ['area_id']
 }
@@ -119,6 +124,37 @@ def register_devices(devices: dict, register: dict):
     return register
 
 
+def register_signatures(register: dict):
+    if 'device_signatures' not in register:
+        register['device_signatures'] = {}
+
+    for importer, package_name, ispkg in pkgutil.walk_packages(
+            path=zhaquirks.__path__, onerror=lambda x: None
+    ):
+        package_route = f"zhaquirks.{package_name}"
+        package = importlib.import_module(package_route)
+        if not ispkg:
+            continue
+        for _, module, is_pkg in pkgutil.walk_packages(package.__path__):
+            if is_pkg:
+                continue
+            module_route = f"{package_route}.{module}"
+            module = importlib.import_module(module_route)
+            for class_name, obj in inspect.getmembers(module, inspect.isclass):
+                if hasattr(obj, 'signature') and obj.signature is not None:
+                    device_key = zhaquirks.const.MODELS_INFO
+                    if device_key not in obj.signature:
+                        continue
+                    for device_id in obj.signature[device_key]:
+                        if not device_id:
+                            continue
+                        key = ' '.join(filter(lambda x: x is not None, device_id))
+                        location = [module_route, class_name]
+                        register['device_signatures'][key] = location
+
+    return register
+
+
 def get_registry(instance, directory: None):
     domains = instance.get_services()
     devices = instance.get_devices()
@@ -129,6 +165,7 @@ def get_registry(instance, directory: None):
     reg_data = register_entities(entities, reg_data)
     reg_data = register_states(states, reg_data)
     reg_data = register_devices(devices, reg_data)
+    reg_data = register_signatures(reg_data)
 
     if directory:
         with open(f'{directory}/.registry', 'w', encoding="utf-8") as f:

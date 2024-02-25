@@ -1,8 +1,17 @@
 import json
 from functools import wraps
 from types import FunctionType
-import ha_control.ha_restapi as ha_restapi
 import ha_control.ha_instance as ha_instance
+
+
+def has_new_state(state):
+    if not state:
+        return False
+    if type(state) is not list:
+        return False
+    if type(state[0]) is dict and 'attributes' in state[0]:
+        return True
+    return False
 
 
 def service_call(fcn):
@@ -10,10 +19,11 @@ def service_call(fcn):
     def wrapper(self, *args, **kwargs):
         kwargs['entity_id'] = self.entity_id
         service_name = fcn.__name__
-        return self.instance.call_service(
+        state = self.instance.call_service(
             domain=self.domain_name, service=service_name, data=kwargs
         )
-
+        if has_new_state(state):
+            self.state.set_state(**state[0]['attributes'])
     return wrapper
 
 
@@ -36,7 +46,6 @@ class HAInstance(ha_instance.HAInstance):
 
 
 class Domain(metaclass=DomainFactory):
-
     def __init__(self, entity_id, state, instance):
         self.instance = instance
         self.entity_id = entity_id
@@ -46,31 +55,19 @@ class Domain(metaclass=DomainFactory):
 
 class State:
 
-    def __init__(self, attributes):
-        self._attributes = attributes
-        self.set_state(attributes)
+    def set_state(self, **attributes):
+        for attribute, value in attributes.items():
+            setattr(self, attribute, value)
 
-    def set_state(self, attributes):
-        for k, v in attributes.items():
-            setattr(self, k, v)
+
+class ActionType:
+    pass
+
+
+class Action:
+    pass
 
 
 class Entity:
+    pass
 
-    def __init__(
-            self, instance, entity_id, unique_id, name, device_id,  attributes,
-            domain_class
-    ):
-        self.instance = instance
-        self.entity_id = entity_id
-        self.unique_id = unique_id
-        self.name = name
-        self.device_id = device_id
-        self._attributes = attributes
-        self._domain_class = domain_class
-        self.state = State(attributes)
-        self.services = None
-        if domain_class is not None:
-            self.services = domain_class(
-                self.entity_id, self.state, self.instance
-            )

@@ -44,6 +44,7 @@ api_ref = {
     'config': 'config',
     'events': 'events',
     'services': 'services',
+    'devices': 'devices/{device_id}',
     'history': 'history/period/{timestamp}',
     'logbook': 'logbook/{timestamp}',
     'states': 'states',
@@ -77,22 +78,23 @@ class HAInstance:
         self._auth_headers = auth_headers
         self._auth_headers['Authorization'] = self._auth_headers['Authorization'].format(token=ha_token)
         self._socket = None
+        self._event_socket = None
 
     def _get_id(self):
         self._global_id += 1
         return self._global_id
 
-    def _authenticate(self):
+    def _authenticate(self, ws):
         auth_message = {
             "type": "auth",
             "access_token": self._ha_token
         }
-        self._socket.send(json.dumps(auth_message))
-        self._socket.recv()
+        ws.send(json.dumps(auth_message))
+        ws.recv()
 
     def _ws_connect(self):
         self._socket = websocket.create_connection(self._ws_url)
-        self._authenticate()
+        self._authenticate(self._socket)
 
     def _ws_send(self, data, data_id=None):
         if 'id' not in data and data_id is None:
@@ -157,3 +159,19 @@ class HAInstance:
     def call_service(self, domain, service, data):
         url = f'{self._api_url}/{api_ref["service"].format(domain=domain, service=service)}'
         return self._api_request(url, method='post', data=data)
+
+    def get_config(self):
+        url = f'{self._api_url}/{api_ref["config"]}'
+        return self._api_request(url)
+
+    def get_events(self):
+        url = f'{self._api_url}/{api_ref["events"]}'
+        return self._api_request(url)
+
+    def get_logbook(self, timestamp):
+        url = f'{self._api_url}/{api_ref["logbook"].format(timestamp=timestamp)}'
+        return self._api_request(url)
+
+    def get_device(self, device_id):
+        url = f'{self._api_url}/{api_ref["devices"].format(device_id=device_id)}'
+        return self._api_request(url)

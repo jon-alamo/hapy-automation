@@ -19,3 +19,10 @@ def generate_modules(directory, ha_url, ha_token):
         reg_data, entities_module_path, domains_route='domains',
         secret_file=secret_file
     )
+
+
+def get_registry(directory):
+    if not os.path.exists(f'{directory}/.registry'):
+        return None
+    with open(f'{directory}/.registry', 'r', encoding="utf-8") as f:
+        return json.load(f)
