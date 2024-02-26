@@ -1,13 +1,15 @@
 import ha_control.helpers as helpers
 
 
-entity_tmpl = '\n'.join([
-    "import ha_control.models as models",
-    "from . import {domains_route} as my_domains",
-    "import dataclasses",
-    "import typing",
-    "\nmy_ha_instance = models.HAInstance(secret_file='{secret_file}')\n"
-])
+entity_tmpl = """
+import ha_control.models as models
+from . import {domains_route} as my_domains
+from . import {devices_route} as my_devices
+import dataclasses
+import typing
+
+my_ha_instance = models.HAInstance(secret_file='{secret_file}')
+"""
 
 entity_ref_tmpl = """
 class {class_name}(models.Entity):
@@ -70,15 +72,17 @@ def get_instantiate_definition(entity_id, entity_data, register):
         name=name,
         attributes=attributes,
         domain_ref=domain_ref,
-        dataclass_fields=dataclass_fields
+        dataclass_fields=dataclass_fields,
+        device_id=entity_data.get('device_id', None)
     )
 
 
-def generate_entity_module(register, domains_route, secret_file):
+def generate_entity_module(register, domains_route, devices_route, secret_file):
     if 'entities' not in register:
         raise ValueError('No entities to generate')
     entity_header = entity_tmpl.format(
         domains_route=domains_route,
+        devices_route=devices_route,
         secret_file=secret_file
     )
     entity_instances = [entity_header] + [
@@ -88,7 +92,11 @@ def generate_entity_module(register, domains_route, secret_file):
     return '\n'.join(entity_instances)
 
 
-def write_entities_module(register, module_path, domains_route, secret_file):
+def write_entities_module(
+        register, module_path, domains_route, devices_route, secret_file
+):
     with open(module_path, 'w', encoding="utf-8") as f:
-        f.write(generate_entity_module(register, domains_route, secret_file))
+        f.write(generate_entity_module(
+            register, domains_route, devices_route, secret_file
+        ))
     return module_path

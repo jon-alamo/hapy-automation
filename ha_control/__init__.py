@@ -14,11 +14,13 @@ def generate_modules(directory, ha_url, ha_token):
     reg_data = register.get_registry(ha, directory=directory)
     domains_module_path = f'{directory}/domains.py'
     entities_module_path = f'{directory}/entities.py'
+    devices_module_path = f'{directory}/devices.py'
     generators.domains.write_domain_module(reg_data, domains_module_path)
     generators.entities.write_entities_module(
         reg_data, entities_module_path, domains_route='domains',
-        secret_file=secret_file
+        devices_route='devices', secret_file=secret_file
     )
+    generators.devices.write_devices_module(reg_data, devices_module_path)
 
 
 def get_registry(directory):

@@ -1,11 +1,22 @@
 import re
 
+
+INDENT = 4
+
 reserved_names = [
     'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif',
     'else', 'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import',
     'in', 'is', 'lambda', 'None', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
     'True', 'try', 'while', 'with', 'yield'
 ]
+
+
+def get_device_title(manufacturer: [str | None], model: str) -> str:
+    if not manufacturer:
+        return model
+    if not model:
+        return manufacturer
+    return f'{manufacturer} {model}'
 
 
 class Pythonize:
@@ -29,3 +40,9 @@ class Pythonize:
             s = f'_{s}'
         s = re.sub('[^0-9a-zA-Z_]', '', s)
         return re.sub('^[^a-zA-Z_]+', '', s)
+
+
+def get_device_class_name(device_name: [str | None], device_id: str) -> str:
+    if device_name:
+        return Pythonize.class_name(device_name + device_id[-2:])
+    return Pythonize.class_name(device_id)

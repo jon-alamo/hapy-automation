@@ -53,6 +53,10 @@ class Domain(metaclass=DomainFactory):
         self.domain_name = entity_id.split('.')[0]
 
 
+class Entity:
+    pass
+
+
 class State:
 
     def set_state(self, **attributes):
@@ -60,14 +64,6 @@ class State:
             setattr(self, attribute, value)
 
 
-class ActionType:
-    pass
-
-
-class Action:
-    pass
-
-
-class Entity:
+class Device:
     pass
 

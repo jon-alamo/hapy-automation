@@ -1,9 +1,9 @@
+import ha_control.helpers as helpers
 import json
 import zhaquirks
 import pkgutil
 import importlib
 import inspect
-
 
 entity_keys = {
     'id': ['entity_id'],
@@ -68,6 +68,13 @@ def register_entity(entity_data, register):
         update_data = {k: v for k, v in data_piece.items() if v is not None}
         register['entities'][entity_id].update(update_data)
 
+    if 'devices2entities' not in register:
+        register['devices2entities'] = {}
+    if 'device_id' in data_piece and data_piece['device_id'] is not None:
+        if data_piece['device_id'] not in register['devices2entities']:
+            register['devices2entities'][data_piece['device_id']] = []
+        register['devices2entities'][data_piece['device_id']].append(entity_id)
+
     return register
 
 
@@ -82,6 +89,12 @@ def register_device(device_data, register):
 
     if data_piece['id'] is not None:
         register['devices'][device_id] = data_piece
+
+    if 'device2classname' not in register:
+        register['device2classname'] = {}
+    register['device2classname'][data_piece['id']] = helpers.get_device_class_name(
+        data_piece['name'], data_piece['id']
+    )
     return register
 
 
@@ -145,12 +158,12 @@ def register_signatures(register: dict):
                     device_key = zhaquirks.const.MODELS_INFO
                     if device_key not in obj.signature:
                         continue
-                    for device_id in obj.signature[device_key]:
-                        if not device_id:
+                    for device_brand_names in obj.signature[device_key]:
+                        if not device_brand_names:
                             continue
-                        key = ' '.join(filter(lambda x: x is not None, device_id))
+                        device_title = helpers.get_device_title(*device_brand_names)
                         location = [module_route, class_name]
-                        register['device_signatures'][key] = location
+                        register['device_signatures'][device_title] = location
 
     return register
 

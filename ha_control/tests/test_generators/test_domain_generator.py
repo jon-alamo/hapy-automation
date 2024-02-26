@@ -48,6 +48,7 @@ class TestFieldGenerator(ut.TestCase):
 
         domains_module_path = 'ha_control/tests/modules/my_domains.py'
         entities_module_path = 'ha_control/tests/modules/my_entities.py'
+        devices_module_path = 'ha_control/tests/modules/my_devices.py'
         domains.write_domain_module(reg_data, domains_module_path)
 
         secret_file = 'ha_control/tests/fixtures/.secret'
@@ -56,7 +57,7 @@ class TestFieldGenerator(ut.TestCase):
 
         entities.write_entities_module(
             reg_data, entities_module_path, domains_route='my_domains',
-            secret_file=secret_file
+            devices_route='my_devices', secret_file=secret_file
         )
         append_path = os.path.dirname(domains_module_path)
         sys.path.append(append_path)
