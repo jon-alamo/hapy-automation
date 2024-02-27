@@ -3,6 +3,8 @@ import json
 import ha_control.register as register
 import ha_control.generators as generators
 import ha_control.ha_instance as ha_instance
+from ha_control.automations import Automation
+from ha_control.application import Application
 
 
 def generate_modules(directory, ha_url, ha_token):
@@ -23,8 +25,17 @@ def generate_modules(directory, ha_url, ha_token):
     generators.devices.write_devices_module(reg_data, devices_module_path)
 
 
-def get_registry(directory):
+def get_registry(directory='.'):
     if not os.path.exists(f'{directory}/.registry'):
         return None
     with open(f'{directory}/.registry', 'r', encoding="utf-8") as f:
         return json.load(f)
+
+
+def get_secrets(directory='.'):
+    if not os.path.exists(f'{directory}/.secret'):
+        return None
+    with open(os.path.join(directory, '.secret'), 'r', encoding="utf-8") as f:
+        secrets = json.load(f)
+        return secrets['ha_url'], secrets['ha_token']
+

@@ -2,3 +2,4 @@ python-dotenv
 requests
 websocket-client
 git+https://github.com/zigpy/zha-device-handlers.git
+watchdog

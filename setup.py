@@ -11,7 +11,7 @@ setuptools.setup(
     version='0.1',
     author="jon-alamo",
     author_email="jonrivala@gmail.com",
-    description=(""),
+    description=("HA PurePython Automation Package"),
     long_description="",
     long_description_content_type="text/markdown",
     url="",
@@ -21,5 +21,10 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
      ],
-    install_requires=install_requires
- )
+    install_requires=install_requires,
+    entry_points={
+        'console_scripts': [
+            'ha-startproject = ha_control.commands:start_project',
+        ],
+    },
+)

@@ -59,21 +59,21 @@ def register_entity(entity_data, register):
     if 'entities' not in register:
         register['entities'] = {}
 
-    data_piece = populate_dict(entity_data, entity_keys)
+    data = populate_dict(entity_data, entity_keys)
 
     # Register entity
     if entity_id not in register['entities']:
-        register['entities'][entity_id] = data_piece
+        register['entities'][entity_id] = data
     else:
-        update_data = {k: v for k, v in data_piece.items() if v is not None}
+        update_data = {k: v for k, v in data.items() if v is not None}
         register['entities'][entity_id].update(update_data)
 
     if 'devices2entities' not in register:
         register['devices2entities'] = {}
-    if 'device_id' in data_piece and data_piece['device_id'] is not None:
-        if data_piece['device_id'] not in register['devices2entities']:
-            register['devices2entities'][data_piece['device_id']] = []
-        register['devices2entities'][data_piece['device_id']].append(entity_id)
+    if 'device_id' in data and data['device_id'] is not None:
+        if data['device_id'] not in register['devices2entities']:
+            register['devices2entities'][data['device_id']] = []
+        register['devices2entities'][data['device_id']].append(entity_id)
 
     return register
 
@@ -82,18 +82,18 @@ def register_device(device_data, register):
     if 'id' not in device_data:
         return
     device_id = device_data['id']
-    data_piece = populate_dict(device_data, device_keys)
+    data = populate_dict(device_data, device_keys)
 
     if 'devices' not in register:
         register['devices'] = {}
 
-    if data_piece['id'] is not None:
-        register['devices'][device_id] = data_piece
+    if data['id'] is not None:
+        register['devices'][device_id] = data
 
     if 'device2classname' not in register:
         register['device2classname'] = {}
-    register['device2classname'][data_piece['id']] = helpers.get_device_class_name(
-        data_piece['name'], data_piece['id']
+    register['device2classname'][data['id']] = helpers.get_device_class_name(
+        data['name'], data['id']
     )
     return register
 
