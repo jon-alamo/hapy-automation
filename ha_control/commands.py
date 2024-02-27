@@ -1,9 +1,10 @@
 import os
-import shutil
 import argparse
-
+import inspect
 import dotenv
 import ha_control
+import ha_control.templates.application as app_template
+import ha_control.templates.automations as automations_template
 
 dotenv.load_dotenv()
 
@@ -34,11 +35,13 @@ def start_project():
             'environment variable'
         )
 
+    app_tmpl_source = inspect.getsource(app_template)
+    with open('application.py', 'w') as f:
+        f.write(app_tmpl_source)
+    auto_tmpl_source = inspect.getsource(automations_template)
+    with open('automations.py', 'w') as f:
+        f.write(auto_tmpl_source)
+
     directory = os.getcwd()
     ha_control.generate_modules(directory, ha_url, ha_token)
-    templates_dir = os.path.join(ha_control.__path__[0], 'templates')
-    for file_path in os.listdir(templates_dir):
-        shutil.copy(
-            os.path.join(templates_dir, file_path),
-            os.path.join(directory, file_path)
-        )
+
