@@ -5,7 +5,7 @@ install_requires = [
     'requests',
     'websocket-client',
     'watchdog',
-    'zha-device-handlers @ git+https://github.com/zigpy/zha-device-handlers.git'
+    'zhaquirks @ git+https://github.com/zigpy/zha-device-handlers.git'
 ]
 
 
