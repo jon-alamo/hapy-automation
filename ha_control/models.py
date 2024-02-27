@@ -106,8 +106,9 @@ class DeviceHandler(type):
 
 class Device(metaclass=DeviceHandler):
 
-    def handle_action_data(self, data):
-        for action_names, action_data in self.quirk.device_automation_triggers.items():
+    @classmethod
+    def handle_action_data(cls, data):
+        for action_names, action_data in cls.quirk.device_automation_triggers.items():
             action = helpers.get_action_name(*action_names)
             for key, value in action_data:
                 if type(value) is dict:
@@ -116,6 +117,6 @@ class Device(metaclass=DeviceHandler):
                 if data.get(key) != value:
                     break
             else:
-                setattr(self, action, True)
-                DeviceHandler.fired_actions.append((self.device_id, action))
+                setattr(cls, action, True)
+                DeviceHandler.fired_actions.append((cls.device_id, action))
 
