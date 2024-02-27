@@ -1,7 +1,10 @@
 import json
 from functools import wraps
+from dataclasses import fields
 from types import FunctionType
 import ha_control.ha_instance as ha_instance
+import ha_control.helpers as helpers
+import zhaquirks.const as zha_const
 
 
 def has_new_state(state):
@@ -53,17 +56,66 @@ class Domain(metaclass=DomainFactory):
         self.domain_name = entity_id.split('.')[0]
 
 
-class Entity:
+class EntityHandler(type):
+    entities = {}
+
+    def __new__(cls, classname, bases, class_dict):
+        new_class = type.__new__(cls, classname, bases, class_dict)
+        if 'entity_id' in class_dict:
+            cls.entities[class_dict['entity_id']] = new_class
+        return new_class
+
+
+class Entity(metaclass=EntityHandler):
     pass
 
 
 class State:
 
+    def __init__(self, **attributes):
+        self.old = {}
+        self.set_state(**attributes)
+
     def set_state(self, **attributes):
-        for attribute, value in attributes.items():
-            setattr(self, attribute, value)
+        old_attributes = {
+            field.name: getattr(self, field.name) for field in fields(self)
+        }
+        self.old = self.__class__(**old_attributes)
+        for key, value in attributes.items():
+            setattr(self, key, value)
 
 
-class Device:
-    pass
+class DeviceHandler(type):
+    devices = {}
+    fired_actions = []
+
+    def __new__(cls, classname, bases, class_dict):
+        new_class = type.__new__(cls, classname, bases, class_dict)
+        if 'device_id' in class_dict:
+            cls.devices[class_dict['device_id']] = new_class
+        return new_class
+
+    @classmethod
+    def reset_fired_actions(cls):
+        for device_id, action in cls.fired_actions:
+            device = cls.devices.get(device_id)
+            if device:
+                setattr(device, action, False)
+        cls.fired_actions = []
+
+
+class Device(metaclass=DeviceHandler):
+
+    def handle_action_data(self, data):
+        for action_names, action_data in self.quirk.device_automation_triggers.items():
+            action = helpers.get_action_name(*action_names)
+            for key, value in action_data:
+                if type(value) is dict:
+                    if not all(data.get(k) == v for k, v in value.items()):
+                        break
+                if data.get(key) != value:
+                    break
+            else:
+                setattr(self, action, True)
+                DeviceHandler.fired_actions.append((self.device_id, action))
 

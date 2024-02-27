@@ -41,6 +41,10 @@ def start_project():
     auto_tmpl_source = inspect.getsource(automations_template)
     with open('automations.py', 'w') as f:
         f.write(auto_tmpl_source)
+    with open('entities.py', 'w') as f:
+        f.write('')
+    with open('devices.py', 'w') as f:
+        f.write('')
 
     directory = os.getcwd()
     ha_control.generate_modules(directory, ha_url, ha_token)

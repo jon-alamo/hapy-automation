@@ -5,8 +5,8 @@ from ha_control import Automation
 logger = logging.getLogger()
 
 try:
-    from . import entities
-    from . import devices
+    import entities
+    import devices
 except ImportError:
     logger.warning('entities.py or devices.py modules not generated?')
 

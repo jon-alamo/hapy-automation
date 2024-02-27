@@ -1,12 +1,18 @@
 import websocket
 import json
 import importlib
+import logging
+import asyncio
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 import ha_control.event_handler as event_handler
 import ha_control.automations as automations
+import ha_control.models as models
+
+
+logger = logging.getLogger('Application')
 
 
 def get_ws_url(ha_url):
@@ -41,7 +47,8 @@ class Application(websocket.WebSocketApp):
         super().__init__(
             self.ws_url,
             on_open=self.on_open,
-            on_message=event_handler.get_handler(self.ha_token)
+            on_message=self.on_message,
+            on_error=self.on_error,
         )
 
     def get_id(self):
@@ -49,16 +56,22 @@ class Application(websocket.WebSocketApp):
         return self._id
 
     def send(self, data: dict, opcode=websocket.ABNF.OPCODE_TEXT):
-        data['id'] = self.get_id()
+        if 'event' in data['type']:
+            data['id'] = self.get_id()
         return self.sock.send(json.dumps(data))
 
-    def on_open(self):
-        print('Initializing ...')
+    def on_open(self, ws):
         self.send(event_handler.send_auth_message(self.ha_token))
         self.send(event_handler.subscribe_to_events())
 
     def on_message(self, ws, message):
-        print(message)
+        event_handler.handle_message(json.loads(message))
+        asyncio.run(automations.AutomationHandler.run_automations())
+        models.DeviceHandler.reset_fired_actions()
+
+
+    def on_error(self, ws, error):
+        logger.error(error)
 
     def reload(self):
         print('Reloading automations ...')
@@ -66,3 +79,7 @@ class Application(websocket.WebSocketApp):
         total_automations = len(automations.AutomationHandler.automations)
         print(f'Registered {total_automations} automations.')
         self.run_forever()
+
+    def run_forever(self, *args, **kwargs):
+        print('Runningggg ...')
+        super().run_forever(*args, **kwargs)

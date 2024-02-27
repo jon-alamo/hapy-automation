@@ -46,3 +46,7 @@ def get_device_class_name(device_name: [str | None], device_id: str) -> str:
     if device_name:
         return Pythonize.class_name(device_name + device_id[-2:])
     return Pythonize.class_name(device_id)
+
+
+def get_action_name(action_type: str, action_name: str) -> str:
+    return f'{action_type}_{action_name}'

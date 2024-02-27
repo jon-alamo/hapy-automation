@@ -3,13 +3,13 @@ import ha_control.helpers as helpers
 
 entity_tmpl = """
 import ha_control.models as models
-from . import {domains_route} as my_domains
-from . import {devices_route} as my_devices
+import {domains_route} as my_domains
 import dataclasses
 import typing
 
 my_ha_instance = models.HAInstance(secret_file='{secret_file}')
 """
+
 
 entity_ref_tmpl = """
 class {class_name}(models.Entity):
@@ -18,6 +18,7 @@ class {class_name}(models.Entity):
     class _StateClass(models.State):
         "State class for entity {entity_id}"
 {dataclass_fields}
+        state_value: typing.Any = None
 
     state = _StateClass(**{attributes})
     services = {domain_ref}(
@@ -25,10 +26,12 @@ class {class_name}(models.Entity):
         entity_id="{entity_id}",
         state=state
     )
+    entity_id = "{entity_id}"
     unique_id = "{unique_id}"
     name = "{name}"
-    device_id = "{entity_id}"
+    device_id = "{device_id}"
 """
+
 
 INDENT = 4
 
