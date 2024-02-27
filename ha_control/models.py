@@ -114,7 +114,7 @@ class Device(metaclass=DeviceHandler):
                 if type(value) is dict:
                     if not all(data[key].get(k) == v for k, v in value.items()):
                         break
-                if data.get(key) != value:
+                elif data.get(key) != value:
                     break
             else:
                 if hasattr(cls, action):
