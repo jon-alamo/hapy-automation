@@ -22,6 +22,18 @@ def start_project():
     args = parser.parse_args()
     ha_url = args.ha_url or os.getenv('HA_URL')
     ha_token = args.ha_token or os.getenv('HA_TOKEN')
+
+    if not ha_url:
+        raise ValueError(
+            'ha_url needs to be passed as argument, in .env or as '
+            'environment variable'
+        )
+    if not ha_token:
+        raise ValueError(
+            'ha_token needs to be passed as argument, in .env or as '
+            'environment variable'
+        )
+
     directory = os.getcwd()
     ha_control.generate_modules(directory, ha_url, ha_token)
     templates_dir = os.path.join(ha_control.__path__[0], 'templates')
