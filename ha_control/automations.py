@@ -1,6 +1,6 @@
 import time
 import asyncio
-import ha_control.models as models
+import threading
 
 
 class AutomationHandler(type):
@@ -16,16 +16,16 @@ class AutomationHandler(type):
         return new_class
 
     @classmethod
-    async def run_automations(cls):
-        automations = [automation() for automation in cls.automations.values()]
-        tasks = [
-            automation.run() for automation in automations if automation.init_condition()
-        ]
-        await asyncio.gather(*tasks)
+    def run_automations(cls):
+        for automation_class in cls.automations.values():
+            automation = automation_class()
+            if automation.init_condition():
+                threading.Thread(target=automation.run).start()
 
 
 class Automation(metaclass=AutomationHandler):
     step_time = 0.1
+    time_out = 10
 
     def action(self):
         raise NotImplementedError('action method must be implemented')
@@ -36,11 +36,14 @@ class Automation(metaclass=AutomationHandler):
     def exit_condition(self):
         return True
 
-    def _run(self):
+    def is_time_out(self, t0):
+        return time.time() - t0 > self.time_out
+
+    def run(self):
         self.action()
+        t0 = time.time()
         while not self.exit_condition():
             time.sleep(self.step_time)
             self.action()
-
-    async def run(self):
-        await asyncio.to_thread(self._run)
+            if self.is_time_out(t0):
+                break
