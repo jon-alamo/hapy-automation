@@ -1,7 +1,7 @@
 import asyncio
 
 
-class Factory(type):
+class AutomationHandler(type):
     automations = {}
     _base_class = None
 
@@ -19,7 +19,7 @@ class Factory(type):
         await asyncio.gather(*tasks)
 
 
-class Automation(metaclass=Factory):
+class Automation(metaclass=AutomationHandler):
 
     def action(self):
         raise NotImplementedError('action method must be implemented')
