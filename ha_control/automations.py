@@ -1,3 +1,4 @@
+import time
 import asyncio
 import ha_control.models as models
 
@@ -24,9 +25,22 @@ class AutomationHandler(type):
 
 
 class Automation(metaclass=AutomationHandler):
+    step_time = 0.1
 
     def action(self):
         raise NotImplementedError('action method must be implemented')
+
+    def init_condition(self):
+        return False
+
+    def exit_condition(self):
+        return True
+
+    def _run(self):
+        self.action()
+        while not self.exit_condition():
+            time.sleep(self.step_time)
+            self.action()
 
     async def run(self):
         await asyncio.to_thread(self.action)
