@@ -43,4 +43,4 @@ class Automation(metaclass=AutomationHandler):
             self.action()
 
     async def run(self):
-        await asyncio.to_thread(self.action)
+        await asyncio.to_thread(self._run)
