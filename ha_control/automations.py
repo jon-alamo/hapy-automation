@@ -18,7 +18,7 @@ class AutomationHandler(type):
     async def run_automations(cls):
         automations = [automation() for automation in cls.automations.values()]
         tasks = [
-            automation for automation in automations if automation.init_condition()
+            automation.run() for automation in automations if automation.init_condition()
         ]
         await asyncio.gather(*tasks)
 
