@@ -110,13 +110,14 @@ class Device(metaclass=DeviceHandler):
     def handle_action_data(cls, data):
         for action_names, action_data in cls.quirk.device_automation_triggers.items():
             action = helpers.get_action_name(*action_names)
-            for key, value in action_data:
+            for key, value in action_data.items():
                 if type(value) is dict:
                     if not all(data.get(k) == v for k, v in value.items()):
                         break
                 if data.get(key) != value:
                     break
             else:
-                setattr(cls, action, True)
-                DeviceHandler.fired_actions.append((cls.device_id, action))
+                if hasattr(cls, action):
+                    setattr(cls, action, True)
+                    DeviceHandler.fired_actions.append((cls.device_id, action))
 

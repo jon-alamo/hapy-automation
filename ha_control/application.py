@@ -69,6 +69,13 @@ class Application(websocket.WebSocketApp):
         asyncio.run(automations.AutomationHandler.run_automations())
         models.DeviceHandler.reset_fired_actions()
 
+    def run_automations(self):
+        asyncio.ensure_future(self.async_run_automations())
+
+    async def async_run_automations(self):
+        await automations.AutomationHandler.run_automations()
+        models.DeviceHandler.reset_fired_actions()
+
 
     def on_error(self, ws, error):
         logger.error(error)

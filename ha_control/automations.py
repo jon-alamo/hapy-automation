@@ -1,4 +1,5 @@
 import asyncio
+import ha_control.models as models
 
 
 class AutomationHandler(type):
