@@ -4,7 +4,10 @@ install_requires = [
     'python-dotenv',
     'requests',
     'websocket-client',
+    'watchdog',
+    'git+https://github.com/zigpy/zha-device-handlers.git'
 ]
+
 
 setuptools.setup(
     name='ha_control',
