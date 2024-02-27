@@ -24,34 +24,45 @@ class FileChangeHandler(FileSystemEventHandler):
         self.callback()
 
 
-class Application:
+class Application(websocket.WebSocketApp):
+
     def __init__(self, automations_module, ha_url, ha_token, registry):
         self.ha_url = ha_url
         self.ha_token = ha_token
         self.ws_url = get_ws_url(ha_url)
         self.registry = registry
+        self._id = 0
         self.automations_module = automations_module
         self.observer = Observer()
         self.observer.schedule(
             FileChangeHandler(self.reload), path='.', recursive=True
         )
         self.observer.start()
+        super().__init__(
+            self.ws_url,
+            on_open=self.on_open,
+            on_message=event_handler.get_handler(self.ha_token)
+        )
+
+    def get_id(self):
+        self._id += 1
+        return self._id
+
+    def send(self, data: dict, opcode=websocket.ABNF.OPCODE_TEXT):
+        data['id'] = self.get_id()
+        return self.sock.send(json.dumps(data))
+
+    def on_open(self):
+        print('Initializing ...')
+        self.send(event_handler.send_auth_message(self.ha_token))
+        self.send(event_handler.subscribe_to_events())
+
+    def on_message(self, ws, message):
+        print(message)
 
     def reload(self):
         print('Reloading automations ...')
         self.automations_module = importlib.reload(self.automations_module)
         total_automations = len(automations.AutomationHandler.automations)
         print(f'Registered {total_automations} automations.')
-        self.run()
-
-    def run(self):
-        try:
-            ws = websocket.WebSocketApp(
-                self.ws_url,
-                on_message=event_handler.get_handler(self.ha_token)
-            )
-            ws.run_forever()
-        except KeyboardInterrupt:
-            self.observer.stop()
-        self.observer.join()
-
+        self.run_forever()
