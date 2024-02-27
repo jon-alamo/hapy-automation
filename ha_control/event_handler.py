@@ -1,5 +1,9 @@
 import json
+import logging
 import ha_control.models as models
+
+
+logger = logging.getLogger('EventHandler')
 
 
 def send(ws, data):
@@ -33,6 +37,7 @@ def handle_state_change(data):
 def handle_zha_event(data):
     device = models.DeviceHandler.devices.get(data['device_id'])
     if device and device.quirk is not None:
+        logger.info(f'Handling ZHA event: {data}')
         device.handle_action_data(data)
 
 

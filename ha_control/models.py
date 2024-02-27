@@ -112,7 +112,7 @@ class Device(metaclass=DeviceHandler):
             action = helpers.get_action_name(*action_names)
             for key, value in action_data.items():
                 if type(value) is dict:
-                    if not all(data.get(k) == v for k, v in value.items()):
+                    if not all(action_data.get(k) == v for k, v in value.items()):
                         break
                 if data.get(key) != value:
                     break
