@@ -2,7 +2,7 @@ import websocket
 import json
 import importlib
 import logging
-import asyncio
+import threading
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -66,8 +66,10 @@ class Application(websocket.WebSocketApp):
 
     def on_message(self, ws, message):
         event_handler.handle_message(json.loads(message))
-        automations.AutomationHandler.run_automations()
-        models.DeviceHandler.reset_fired_actions()
+        runner = threading.Thread(
+            target=automations.AutomationHandler.run_automations()
+        )
+        runner.start()
 
     def on_error(self, ws, error):
         logger.error(error)

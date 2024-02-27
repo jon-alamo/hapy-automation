@@ -1,5 +1,5 @@
 import time
-import asyncio
+import ha_control.models as models
 import threading
 
 
@@ -17,10 +17,17 @@ class AutomationHandler(type):
 
     @classmethod
     def run_automations(cls):
-        for automation_class in cls.automations.values():
-            automation = automation_class()
-            if automation.init_condition():
-                threading.Thread(target=automation.run).start()
+        automations = [automation() for automation in cls.automations.values()]
+        threads = [
+            threading.Thread(target=automation.run)
+            for automation in automations if automation.init_condition()
+        ]
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+        models.DeviceHandler.reset_fired_actions()
 
 
 class Automation(metaclass=AutomationHandler):
