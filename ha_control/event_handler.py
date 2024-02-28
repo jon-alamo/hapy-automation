@@ -10,10 +10,17 @@ def send(ws, data):
     return ws.send(json.dumps(data))
 
 
-def subscribe_to_events():
+def subscribe_to_state_changes():
     return {
         "type": "subscribe_events",
-        "event_type": "*"
+        "event_type": "state_changed"
+    }
+
+
+def subscribe_to_zha_events():
+    return {
+        "type": "subscribe_events",
+        "event_type": "zha_event"
     }
 
 

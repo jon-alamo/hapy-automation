@@ -62,7 +62,8 @@ class Application(websocket.WebSocketApp):
 
     def on_open(self, ws):
         self.send(event_handler.send_auth_message(self.ha_token))
-        self.send(event_handler.subscribe_to_events())
+        self.send(event_handler.subscribe_to_state_changes())
+        self.send(event_handler.subscribe_to_zha_events())
 
     def on_message(self, ws, message):
         event_handler.handle_message(json.loads(message))
