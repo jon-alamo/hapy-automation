@@ -22,12 +22,10 @@ class AutomationHandler(type):
             threading.Thread(target=automation.run)
             for automation in automations if automation.init_condition()
         ]
-        for thread in threads:
-            thread.start()
+        models.DeviceHandler.reset_fired_actions()
 
         for thread in threads:
-            thread.join()
-        models.DeviceHandler.reset_fired_actions()
+            thread.start()
 
 
 class Automation(metaclass=AutomationHandler):

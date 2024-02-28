@@ -66,10 +66,7 @@ class Application(websocket.WebSocketApp):
 
     def on_message(self, ws, message):
         event_handler.handle_message(json.loads(message))
-        runner = threading.Thread(
-            target=automations.AutomationHandler.run_automations()
-        )
-        runner.start()
+        automations.AutomationHandler.run_automations()
 
     def on_error(self, ws, error):
         logger.error(error)
