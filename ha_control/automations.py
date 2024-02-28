@@ -5,6 +5,7 @@ import threading
 
 class AutomationHandler(type):
     automations = {}
+    running_automations = {}
     _base_class = None
 
     def __new__(cls, classname, bases, class_dict):
@@ -16,21 +17,32 @@ class AutomationHandler(type):
         return new_class
 
     @classmethod
-    def run_automations(cls):
-        automations = [automation() for automation in cls.automations.values()]
-        threads = [
-            threading.Thread(target=automation.run)
-            for automation in automations if automation.init_condition()
-        ]
-        models.DeviceHandler.reset_fired_actions()
+    def handle_exit_conditions(cls):
+        for name in list(cls.running_automations.keys()):
+            automation = cls.running_automations[name]
+            if automation.exit_condition():
+                automation.force_exit = True
+                cls.running_automations.pop(name)
 
-        for thread in threads:
+    @classmethod
+    def run_automations(cls):
+        to_run = {
+            automation.__name__: automation()
+            for automation in cls.automations.values()
+            if automation().init_condition()
+        }
+        cls.running_automations.update(to_run)
+        for automation in to_run.values():
+            thread = threading.Thread(target=automation.run)
             thread.start()
 
 
 class Automation(metaclass=AutomationHandler):
     step_time = 0.1
     time_out = 10
+
+    def __init__(self):
+        self.force_exit = False
 
     def action(self):
         raise NotImplementedError('action method must be implemented')
@@ -48,7 +60,9 @@ class Automation(metaclass=AutomationHandler):
         self.action()
         t0 = time.time()
         while not self.exit_condition():
-            time.sleep(self.step_time)
             self.action()
+            time.sleep(self.step_time)
             if self.is_time_out(t0):
-                break
+                return
+            if self.force_exit:
+                return

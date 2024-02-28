@@ -1,8 +1,9 @@
 import json
-import os
+import logging
 import websocket
 import requests
 
+logger = logging.getLogger('HAInstance')
 
 ws_ref = {
     'auth_message': {
@@ -131,7 +132,8 @@ class HAInstance:
         response = method(url, json=data, headers=self._auth_headers)
         if 200 <= response.status_code < 300:
             return response.json()
-        return response.json()
+        logger.error(f'API Error {response.status_code}: {response.text}')
+        return None
 
     def get_message(self, message_type, **kwargs):
         message = ws_ref[message_type].copy()

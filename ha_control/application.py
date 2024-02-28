@@ -67,17 +67,16 @@ class Application(websocket.WebSocketApp):
 
     def on_message(self, ws, message):
         event_handler.handle_message(json.loads(message))
+        automations.AutomationHandler.handle_exit_conditions()
         automations.AutomationHandler.run_automations()
+        models.DeviceHandler.reset_fired_actions()
 
     def on_error(self, ws, error):
         logger.error(error)
 
     def reload(self):
-        print('Reloading automations ...')
-        self.automations_module = importlib.reload(self.automations_module)
-        total_automations = len(automations.AutomationHandler.automations)
-        print(f'Registered {total_automations} automations.')
-        self.run_forever()
+        print('Changes detected ...')
+        print('Doing nothing. Not implemented yet...')
 
     def run_forever(self, *args, **kwargs):
         print('Runningggg ...')

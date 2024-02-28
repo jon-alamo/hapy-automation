@@ -25,7 +25,7 @@ def service_call(fcn):
         state = self.instance.call_service(
             domain=self.domain_name, service=service_name, data=kwargs
         )
-        if has_new_state(state):
+        if state and has_new_state(state):
             self.state.set_state(**state[0]['attributes'])
     return wrapper
 
