@@ -1,7 +1,7 @@
-import pydantic
+from pydantic_settings import BaseSettings
 
 
-class Settings(pydantic.BaseSettings):
+class Settings(BaseSettings):
     ha_url: str
     ha_token: str
 
