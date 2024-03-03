@@ -5,7 +5,7 @@ install_requires = [
     'websocket-client',
     'watchdog',
     'zha-quirks',
-    'pydantic'
+    'pydantic-settings'
 ]
 
 
