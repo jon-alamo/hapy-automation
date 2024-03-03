@@ -7,7 +7,7 @@ import {domains_route} as my_domains
 import dataclasses
 import typing
 
-my_ha_instance = models.HAInstance(secret_file='{secret_file}')
+my_ha_instance = models.HAInstance()
 """
 
 
@@ -80,13 +80,14 @@ def get_instantiate_definition(entity_id, entity_data, register):
     )
 
 
-def generate_entity_module(register, domains_route, devices_route, secret_file):
+def generate_entity_module(
+        register, domains_route, devices_route
+):
     if 'entities' not in register:
         raise ValueError('No entities to generate')
     entity_header = entity_tmpl.format(
         domains_route=domains_route,
-        devices_route=devices_route,
-        secret_file=secret_file
+        devices_route=devices_route
     )
     entity_instances = [entity_header] + [
         get_instantiate_definition(entity_id, entity_data, register)
@@ -96,10 +97,10 @@ def generate_entity_module(register, domains_route, devices_route, secret_file):
 
 
 def write_entities_module(
-        register, module_path, domains_route, devices_route, secret_file
+        register, module_path, domains_route, devices_route
 ):
     with open(module_path, 'w', encoding="utf-8") as f:
         f.write(generate_entity_module(
-            register, domains_route, devices_route, secret_file
+            register, domains_route, devices_route
         ))
     return module_path

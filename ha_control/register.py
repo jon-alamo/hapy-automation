@@ -168,12 +168,12 @@ def register_signatures(register: dict):
     return register
 
 
-def get_registry(instance, directory: None):
+def get_registry(instance, directory: None, reg_data=None):
     domains = instance.get_services()
     devices = instance.get_devices()
     entities = instance.get_entities()
     states = instance.get_states()
-    reg_data = {}
+    reg_data = reg_data or {}
     reg_data = register_domains(domains, reg_data)
     reg_data = register_entities(entities, reg_data)
     reg_data = register_states(states, reg_data)

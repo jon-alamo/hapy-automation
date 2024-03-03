@@ -4,6 +4,7 @@ from dataclasses import fields
 from types import FunctionType
 import ha_control.ha_instance as ha_instance
 import ha_control.helpers as helpers
+from ha_control.config import settings
 import zhaquirks.const as zha_const
 
 
@@ -42,10 +43,8 @@ class DomainFactory(type):
 
 
 class HAInstance(ha_instance.HAInstance):
-    def __init__(self, secret_file):
-        with open(secret_file, 'r') as f:
-            secret = json.load(f)
-        super().__init__(ha_url=secret['ha_url'], ha_token=secret['ha_token'])
+    def __init__(self):
+        super().__init__(ha_url=settings.ha_url, ha_token=settings.ha_token)
 
 
 class Domain(metaclass=DomainFactory):

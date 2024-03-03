@@ -1,11 +1,11 @@
 import setuptools
 
 install_requires = [
-    'python-dotenv',
     'requests',
     'websocket-client',
     'watchdog',
-    'zha-quirks'
+    'zha-quirks',
+    'pydantic'
 ]
 
 
