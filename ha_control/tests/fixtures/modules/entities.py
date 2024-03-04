@@ -5,7 +5,7 @@ from importlib.machinery import SourceFileLoader
 import ha_control.models as models
 
 domains_path = __file__.replace("entities.py", "domains.py")
-my_domains = SourceFileLoader("my_domains", domains_path).load_module()
+domains = SourceFileLoader("domains", domains_path).load_module()
 
 
 my_ha_instance = models.HAInstance()
@@ -37,7 +37,7 @@ class LightLivingDownLight01(models.Entity):
         state_value: typing.Any = None
 
     state = _StateClass(**{'min_color_temp_kelvin': 1801, 'max_color_temp_kelvin': 6535, 'min_mireds': 153, 'max_mireds': 555, 'effect_list': ['colorloop'], 'supported_color_modes': ['color_temp', 'xy'], 'color_mode': 'color_temp', 'brightness': 254, 'color_temp_kelvin': 1801, 'color_temp': 555, 'hs_color': [29.751, 100.0], 'rgb_color': [255, 126, 0], 'xy_color': [0.614, 0.373], 'effect': None, 'off_with_transition': False, 'off_brightness': None, 'friendly_name': 'living-down-light-01 Light', 'supported_features': 44})
-    services = my_domains.Light(
+    services = domains.Light(
         instance=my_ha_instance,
         entity_id="light.living_down_light_01",
         state=state
@@ -124,7 +124,7 @@ class ButtonBedMainSwitch01Identify(models.Entity):
         state_value: typing.Any = None
 
     state = _StateClass(**{'device_class': 'identify', 'friendly_name': 'bed-main-switch-01 Identify'})
-    services = my_domains.Button(
+    services = domains.Button(
         instance=my_ha_instance,
         entity_id="button.bed_main_switch_01_identify",
         state=state

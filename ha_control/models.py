@@ -91,7 +91,6 @@ class State:
 
 class DeviceHandler(type):
     devices = {}
-    device_id = None
     fired_actions = []
 
     def __new__(cls, classname, bases, class_dict):
@@ -108,13 +107,9 @@ class DeviceHandler(type):
                 setattr(device, action, False)
         cls.fired_actions = []
 
-    @classmethod
-    @property
-    def id(cls):
-        return cls.device_id
-
 
 class Device(metaclass=DeviceHandler):
+    device_id = None
 
     @classmethod
     def handle_action_data(cls, data):
@@ -131,3 +126,7 @@ class Device(metaclass=DeviceHandler):
                     setattr(cls, action, True)
                     DeviceHandler.fired_actions.append((cls.device_id, action))
 
+    @classmethod
+    @property
+    def id(cls):
+        return cls.device_id

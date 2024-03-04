@@ -15,12 +15,12 @@ class TestAutomationsBindings(unittest.TestCase):
         devices = SourceFileLoader("devices", devices_path).load_module()
         my_aut = SourceFileLoader("my_aut", automations_path).load_module()
         self.assertIn(
-            devices.MainSwitch,
+            devices.MainSwitch.id,
             automations.AutomationHandler.automation_bindings
         )
         self.assertIn(
             my_aut.OnPressButton,
-            automations.AutomationHandler.automation_bindings[devices.MainSwitch]
+            automations.AutomationHandler.automation_bindings[devices.MainSwitch.id]
         )
 
     def test_automation_to_run_on_entity_change(self):
