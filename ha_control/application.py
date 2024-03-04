@@ -1,8 +1,8 @@
 import websocket
 import json
-import importlib
 import logging
-import threading
+import importlib
+import types
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -13,6 +13,28 @@ import ha_control.models as models
 
 
 logger = logging.getLogger('Application')
+
+
+init_message = """
+::::::::::::::::::: Running :::::::::::::::::::::::::
+App connected to Home Assistant instance at: {ha_url}
+
+- Registered automations:   {automations}
+- Registered devices:       {devices}
+- Registered entities:      {entities}
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+"""
+
+reload_message = """
+::::::::::::::::::: Reloading :::::::::::::::::::::::
+
+- Registered automations:   {automations}
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+"""
 
 
 def get_ws_url(ha_url):
@@ -74,10 +96,24 @@ class Application(websocket.WebSocketApp):
     def on_error(self, ws, error):
         logger.error(error)
 
+    def recursively_import_modules(self, module):
+        importlib.reload(module)
+        for name, mod in vars(self.automations_module).items():
+            if isinstance(mod, types.ModuleType):
+                self.recursively_import_modules(mod)
+
     def reload(self):
-        print('Changes detected ...')
-        print('Doing nothing. Not implemented yet...')
+        importlib.reload(self.automations_module)
+        self.recursively_import_modules(self.automations_module)
+        current_automations = len(automations.AutomationHandler.automations)
+        print(reload_message.format(automations=current_automations))
 
     def run_forever(self, *args, **kwargs):
-        print('Runningggg ...')
+        print(init_message.format(
+            ha_url=self.ha_url,
+            automations=len(automations.AutomationHandler.automations),
+            devices=len(models.DeviceHandler.devices),
+            entities=len(models.EntityHandler.entities)
+        ))
+        models.EntityHandler.read_states()
         super().run_forever(*args, **kwargs)

@@ -57,12 +57,27 @@ class Domain(metaclass=DomainFactory):
 
 class EntityHandler(type):
     entities = {}
+    homeassistant = HAInstance()
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
         if 'entity_id' in class_dict:
             cls.entities[class_dict['entity_id']] = new_class
         return new_class
+
+    @classmethod
+    def read_states(cls):
+        states = cls.homeassistant.get_states()
+        for state in states:
+            entity_id = state.get('entity_id')
+            if entity_id in cls.entities:
+                entity = cls.entities.get(entity_id)
+                entity.state.set_state(
+                    state_value=state.get('state'),
+                    last_changed=state.get('last_changed'),
+                    last_updated=state.get('last_updated'),
+                    **state.get('attributes')
+                )
 
 
 class Entity(metaclass=EntityHandler):
