@@ -3,3 +3,4 @@ websocket-client
 git+https://github.com/zigpy/zha-device-handlers.git
 watchdog
 pydantic-settings
+pytz

@@ -6,6 +6,7 @@ import ha_control.models as models
 import {domains_route} as my_domains
 import dataclasses
 import typing
+from datetime import datetime
 
 my_ha_instance = models.HAInstance()
 """
@@ -16,8 +17,11 @@ class {class_name}(models.Entity):
 
     @dataclasses.dataclass
     class _StateClass(models.State):
-        "State class for entity {entity_id}"
+        \"\"\"State class for entity {entity_id}\"\"\"
 {dataclass_fields}
+        old: models.State = models.State()
+        last_changed: datetime = None
+        last_updated: datetime = None
         state_value: typing.Any = None
 
     state = _StateClass(**{attributes})

@@ -44,6 +44,11 @@ class AutomationHandler(type):
         return new_class
 
     @classmethod
+    def reset_automations(cls):
+        cls.automation_bindings = {}
+        cls.automations = {}
+
+    @classmethod
     def handle_exit_conditions(cls):
         for name in list(cls.running_automations.keys()):
             automation = cls.running_automations[name]
@@ -56,9 +61,9 @@ class AutomationHandler(type):
         to_run = {
             automation.__name__: automation()
             for automation in cls.to_check_automations
-            if automation().init_condition()
         }
         cls.running_automations.update(to_run)
+        cls.to_check_automations = []
         for automation in to_run.values():
             thread = threading.Thread(target=automation.run)
             thread.start()
@@ -84,6 +89,8 @@ class Automation(metaclass=AutomationHandler):
         return time.time() - t0 > self.time_out
 
     def run(self):
+        if not self.init_condition():
+            return
         self.action()
         t0 = time.time()
         while not self.exit_condition():

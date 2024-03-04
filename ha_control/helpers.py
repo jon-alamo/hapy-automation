@@ -1,4 +1,23 @@
 import re
+import pytz
+from ha_control.config import settings
+from datetime import datetime, timezone
+
+tzname = settings.timezone
+tz = pytz.timezone(tzname)
+
+
+def get_now():
+    return datetime.now(tz)
+
+
+def parse_date(last_changed):
+    if type(last_changed) is str:
+        return datetime.fromisoformat(last_changed).astimezone(tz)
+    elif type(last_changed) is datetime:
+        return last_changed
+    else:
+        return datetime.now(tz)
 
 
 INDENT = 4

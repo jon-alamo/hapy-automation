@@ -1,13 +1,8 @@
-import json
 from functools import wraps
-from dataclasses import fields
 from types import FunctionType
 import ha_control.ha_instance as ha_instance
 import ha_control.helpers as helpers
 from ha_control.config import settings
-import zhaquirks.const as zha_const
-from datetime import datetime, timezone
-
 
 
 def has_new_state(state):
@@ -98,19 +93,11 @@ class State:
         self.last_updated = None
         self.set_state(state_value, last_changed, last_updated, **attributes)
 
-    @staticmethod
-    def parse_date(last_changed):
-        if type(last_changed) is str:
-            return datetime.fromisoformat(last_changed)
-        elif type(last_changed) is datetime:
-            return last_changed
-        else:
-            return datetime.now(timezone.utc)
 
     def set_state(self, state_value, last_changed, last_updated, **attributes):
         self.state_value = state_value
-        self.last_changed = self.parse_date(last_changed)
-        self.last_updated = self.parse_date(last_updated)
+        self.last_changed = helpers.parse_date(last_changed)
+        self.last_updated = helpers.parse_date(last_updated)
         for key, value in attributes.items():
             setattr(self, key, value)
 
@@ -136,14 +123,15 @@ class State:
             **old_state_data.get('attributes', {})
         )
 
-    def changed(self, old_value=None, new_value=None, seconds=5):
+    def changed(self, old_value=None, new_value=None, offset=60):
         old_value = old_value or self.old.state_value
         new_value = new_value or self.state_value
+
         return (
             old_value == self.old.state_value
             and new_value == self.state_value
             and new_value != old_value
-            and (datetime.now(timezone.utc) - self.last_changed).seconds < seconds
+            and (helpers.get_now() - self.last_changed).seconds < offset
         )
 
     def updated(self, attribute, old_value=None, new_value=None, seconds=5):
@@ -153,7 +141,7 @@ class State:
             old_value == getattr(self.old, attribute)
             and new_value == getattr(self, attribute)
             and new_value != old_value
-            and (datetime.now(timezone.utc) - self.last_updated).seconds < seconds
+            and (helpers.get_now() - self.last_updated).seconds < seconds
         )
 
 

@@ -3,6 +3,7 @@ import json
 import logging
 import importlib
 import types
+import time
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -66,6 +67,8 @@ class Application(websocket.WebSocketApp):
             FileChangeHandler(self.reload), path='.', recursive=True
         )
         self.observer.start()
+        self._reload_timer = time.time()
+        self._reload_wait = 1
         super().__init__(
             self.ws_url,
             on_open=self.on_open,
@@ -96,17 +99,24 @@ class Application(websocket.WebSocketApp):
     def on_error(self, ws, error):
         logger.error(error)
 
-    def recursively_import_modules(self, module):
+    def recursively_import_modules(self, module, imported=None):
         importlib.reload(module)
+        imported = imported or []
         for name, mod in vars(self.automations_module).items():
-            if isinstance(mod, types.ModuleType):
-                self.recursively_import_modules(mod)
+            if name in imported:
+                continue
+            elif isinstance(mod, types.ModuleType):
+                imported.append(name)
+                self.recursively_import_modules(mod, imported)
 
     def reload(self):
-        importlib.reload(self.automations_module)
+        if time.time() - self._reload_timer < self._reload_wait:
+            return
+        automations.AutomationHandler.reset_automations()
         self.recursively_import_modules(self.automations_module)
         current_automations = len(automations.AutomationHandler.automations)
         print(reload_message.format(automations=current_automations))
+        self._reload_timer = time.time()
 
     def run_forever(self, *args, **kwargs):
         print(init_message.format(
