@@ -66,7 +66,12 @@ class EntityHandler(type):
 
 
 class Entity(metaclass=EntityHandler):
-    pass
+    entity_id = None
+
+    @classmethod
+    @property
+    def id(cls):
+        return cls.entity_id
 
 
 class State:
@@ -86,6 +91,7 @@ class State:
 
 class DeviceHandler(type):
     devices = {}
+    device_id = None
     fired_actions = []
 
     def __new__(cls, classname, bases, class_dict):
@@ -101,6 +107,11 @@ class DeviceHandler(type):
             if device:
                 setattr(device, action, False)
         cls.fired_actions = []
+
+    @classmethod
+    @property
+    def id(cls):
+        return cls.device_id
 
 
 class Device(metaclass=DeviceHandler):

@@ -57,7 +57,7 @@ class TestFieldGenerator(ut.TestCase):
 
         entities.write_entities_module(
             reg_data, entities_module_path, domains_route='my_domains',
-            devices_route='my_devices', secret_file=secret_file
+            devices_route='my_devices'
         )
         append_path = os.path.dirname(domains_module_path)
         sys.path.append(append_path)

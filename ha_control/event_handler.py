@@ -1,6 +1,7 @@
 import json
 import logging
 import ha_control.models as models
+import ha_control.automations as automations
 
 
 logger = logging.getLogger('EventHandler')
@@ -38,6 +39,7 @@ def handle_state_change(data):
         state_value = new_state.get('state')
         attributes = new_state.get('attributes', {})
         attributes['state_value'] = state_value
+        automations.AutomationHandler.register_change(entity)
         entity.state.set_state(**attributes)
 
 
@@ -45,6 +47,7 @@ def handle_zha_event(data):
     device = models.DeviceHandler.devices.get(data['device_id'])
     if device and device.quirk is not None:
         logger.info(f'Handling ZHA event: {data}')
+        automations.AutomationHandler.register_change(device)
         device.handle_action_data(data)
 
 
