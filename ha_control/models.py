@@ -6,6 +6,8 @@ import ha_control.ha_instance as ha_instance
 import ha_control.helpers as helpers
 from ha_control.config import settings
 import zhaquirks.const as zha_const
+from datetime import datetime, timezone
+
 
 
 def has_new_state(state):
@@ -23,11 +25,9 @@ def service_call(fcn):
     def wrapper(self, *args, **kwargs):
         kwargs['entity_id'] = self.entity_id
         service_name = fcn.__name__
-        state = self.instance.call_service(
+        return self.instance.call_service(
             domain=self.domain_name, service=service_name, data=kwargs
         )
-        if state and has_new_state(state):
-            self.state.set_state(**state[0]['attributes'])
     return wrapper
 
 
@@ -76,17 +76,70 @@ class Entity(metaclass=EntityHandler):
 
 class State:
 
-    def __init__(self, **attributes):
-        self.old = {}
-        self.set_state(**attributes)
+    def __init__(self, state_value=None, last_changed=None, last_updated=None, **attributes):
+        self.old = None
+        self.state_value = None
+        self.last_changed = None
+        self.last_updated = None
+        self.set_state(state_value, last_changed, last_updated, **attributes)
 
-    def set_state(self, **attributes):
-        old_attributes = {
-            field.name: getattr(self, field.name) for field in fields(self)
-        }
-        self.old = self.__class__(**old_attributes)
+    @staticmethod
+    def parse_date(last_changed):
+        if type(last_changed) is str:
+            return datetime.fromisoformat(last_changed)
+        elif type(last_changed) is datetime:
+            return last_changed
+        else:
+            return datetime.now(timezone.utc)
+
+    def set_state(self, state_value, last_changed, last_updated, **attributes):
+        self.state_value = state_value
+        self.last_changed = self.parse_date(last_changed)
+        self.last_updated = self.parse_date(last_updated)
         for key, value in attributes.items():
             setattr(self, key, value)
+
+    def set_from_state_event(self, event_data):
+        new_state = event_data.get('new_state')
+        state_value = new_state.get('state')
+        last_changed = new_state.get('last_changed')
+        last_updated = new_state.get('last_updated')
+        self.set_state(
+            state_value=state_value,
+            last_changed=last_changed,
+            last_updated=last_updated,
+            **new_state.get('attributes')
+        )
+        old_state_data = event_data.get('old_state', {})
+        old_state_value = old_state_data.get('state')
+        old_state_changed = old_state_data.get('last_changed')
+        old_state_updated = old_state_data.get('last_updated')
+        self.old = State(
+            state_value=old_state_value,
+            last_changed=old_state_changed,
+            last_updated=old_state_updated,
+            **old_state_data.get('attributes', {})
+        )
+
+    def changed(self, old_value=None, new_value=None, seconds=5):
+        old_value = old_value or self.old.state_value
+        new_value = new_value or self.state_value
+        return (
+            old_value == self.old.state_value
+            and new_value == self.state_value
+            and new_value != old_value
+            and (datetime.now(timezone.utc) - self.last_changed).seconds < seconds
+        )
+
+    def updated(self, attribute, old_value=None, new_value=None, seconds=5):
+        old_value = old_value or getattr(self.old, attribute)
+        new_value = new_value or getattr(self, attribute)
+        return (
+            old_value == getattr(self.old, attribute)
+            and new_value == getattr(self, attribute)
+            and new_value != old_value
+            and (datetime.now(timezone.utc) - self.last_updated).seconds < seconds
+        )
 
 
 class DeviceHandler(type):

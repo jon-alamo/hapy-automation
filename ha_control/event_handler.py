@@ -35,12 +35,8 @@ def send_auth_message(ha_token):
 def handle_state_change(data):
     entity = models.EntityHandler.entities.get(data['entity_id'])
     if entity:
-        new_state = data.get('new_state', {})
-        state_value = new_state.get('state')
-        attributes = new_state.get('attributes', {})
-        attributes['state_value'] = state_value
         automations.AutomationHandler.register_change(entity)
-        entity.state.set_state(**attributes)
+        entity.state.set_from_state_event(data)
 
 
 def handle_zha_event(data):
