@@ -1,8 +1,9 @@
 import logging
 import hapy
 
-import entities
-import devices
+# Uncomment to use entities and devices in the automations
+# import entities
+# import devices
 
 
 logger = logging.getLogger('automations')

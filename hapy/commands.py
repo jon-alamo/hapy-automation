@@ -30,6 +30,21 @@ def create_automations_template(directory, auto_tmpl_source):
         f.write(auto_tmpl_source)
 
 
+def generate_side_files(directory):
+    env_file = os.path.join(directory, '.env')
+    if not os.path.exists(env_file):
+        with open(env_file, 'w') as f:
+            f.write(f'HA_URL={config.settings.ha_url}\n')
+            f.write(f'HA_TOKEN={config.settings.ha_token}')
+    gitignore_file = os.path.join(directory, '.gitignore')
+    if not os.path.exists(gitignore_file):
+        with open(gitignore_file, 'w') as f:
+            f.write((
+                '.vscode\n__pycache__\n.idea\n*.pyc\n*.pyo\n*.pyd\nvenv\n'
+                '*.dist-info\n*.dist\n*.egg-info'
+            ))
+
+
 def create_update_project(directory):
     ha_url = config.settings.ha_url
     ha_token = config.settings.ha_token
@@ -39,6 +54,7 @@ def create_update_project(directory):
     if not ha_token:
         raise ValueError('HA_TOKEN needs to be defined in .env file.')
     ensure_directory(directory)
+    generate_side_files(directory)
     app_tmpl_source = inspect.getsource(app_template)
     create_application_template(directory, app_tmpl_source)
     auto_tmpl_source = inspect.getsource(automations_template)
