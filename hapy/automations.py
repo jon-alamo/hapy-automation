@@ -1,9 +1,12 @@
 import time
 import threading
 import sys
-
+import types
+import hapy.models as models
 
 register_modules = ['entities', 'devices']
+
+base_classes = [models.Entity, models.Device]
 
 
 class AutomationHandler(type):
@@ -20,19 +23,36 @@ class AutomationHandler(type):
             cls.to_check_automations.extend(cls.automation_bindings[item.id])
 
     @classmethod
+    def is_found_object(cls, obj):
+        for base_class in base_classes:
+            try:
+                if issubclass(obj, base_class):
+                    return True
+            except TypeError:
+                pass
+        return False
+
+    @classmethod
+    def find_trigger_items(cls, function, contexts: list):
+        for name in function.__code__.co_names:
+            for context in list(contexts):
+                if hasattr(context, name):
+                    obj = getattr(context, name)
+                    if type(obj) is types.FunctionType:
+                        yield from cls.find_trigger_items(obj, contexts)
+                    elif type(obj) is types.ModuleType or type(obj) == type:
+                        contexts.append(obj)
+                    elif cls.is_found_object(obj):
+                        yield obj
+                        break
+
+    @classmethod
     def make_bindings(cls, new_class):
-        automation_module = sys.modules[new_class.__module__]
-        for name in new_class.init_condition.__code__.co_names:
-            if name in register_modules and hasattr(automation_module, name):
-                cls.modules[name] = getattr(automation_module, name)
-                continue
-            for module_name, module_object in cls.modules.items():
-                if hasattr(module_object, name):
-                    module_class = getattr(module_object, name)
-                    if module_class not in cls.automation_bindings:
-                        cls.automation_bindings[module_class.id] = []
-                    cls.automation_bindings[module_class.id].append(new_class)
-                    break
+        contexts = [sys.modules[new_class.__module__]]
+        for obj in cls.find_trigger_items(new_class.init_condition, contexts):
+            if obj.id not in cls.automation_bindings:
+                cls.automation_bindings[obj.id] = []
+            cls.automation_bindings[obj.id].append(new_class)
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
