@@ -2,7 +2,7 @@ from importlib.machinery import SourceFileLoader
 from datetime import datetime, timezone
 import unittest
 
-import ha_control.event_handler as event_handler
+import hapy.event_handler as event_handler
 
 
 entities_path = 'ha_control/tests/fixtures/modules/entities.py'

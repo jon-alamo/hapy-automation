@@ -1,8 +1,8 @@
 from functools import wraps
 from types import FunctionType
-import ha_control.ha_instance as ha_instance
-import ha_control.helpers as helpers
-from ha_control.config import settings
+import hapy.ha_instance as ha_instance
+import hapy.helpers as helpers
+from hapy.config import settings
 
 
 def has_new_state(state):

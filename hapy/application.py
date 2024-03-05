@@ -8,9 +8,9 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-import ha_control.event_handler as event_handler
-import ha_control.automations as automations
-import ha_control.models as models
+import hapy.events as event_handler
+import hapy.automations as automations
+import hapy.models as models
 
 
 logger = logging.getLogger('Application')

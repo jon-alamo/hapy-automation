@@ -1,7 +1,7 @@
 import json
 import logging
-import ha_control.models as models
-import ha_control.automations as automations
+import hapy.models as models
+import hapy.automations as automations
 
 
 logger = logging.getLogger('EventHandler')

@@ -11,11 +11,11 @@ install_requires = [
 
 
 setuptools.setup(
-    name='ha_control',
+    name='hapy',
     version='0.1',
     author="jon-alamo",
     author_email="jonrivala@gmail.com",
-    description=("HA PurePython Automation Package"),
+    description="Home Assistant (Pure)Python Automation Tool",
     long_description="",
     long_description_content_type="text/markdown",
     url="",
@@ -28,7 +28,7 @@ setuptools.setup(
     install_requires=install_requires,
     entry_points={
         'console_scripts': [
-            'ha-startproject = ha_control.commands:start_project',
+            'hapy-start = ha_control.commands:start_project',
         ],
     },
 )

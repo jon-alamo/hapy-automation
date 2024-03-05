@@ -1,7 +1,7 @@
 import importlib.util
-import ha_control.register as register
-import ha_control.generators.domains as domains
-import ha_control.generators.entities as entities
+import hapy.register as register
+import hapy.generators.domains as domains
+import hapy.generators.entities as entities
 import unittest as ut
 import json
 import os

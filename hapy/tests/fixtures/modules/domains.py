@@ -1,4 +1,4 @@
-import ha_control.models as models
+import hapy.models as models
 
 
 class Light(models.Domain):

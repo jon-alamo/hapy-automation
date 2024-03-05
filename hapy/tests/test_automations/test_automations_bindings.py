@@ -1,7 +1,7 @@
 from importlib.machinery import SourceFileLoader
 import unittest
-import ha_control.automations as automations
-import ha_control.event_handler as event_handler
+import hapy.automations as automations
+import hapy.event_handler as event_handler
 
 
 entities_path = 'ha_control/tests/fixtures/modules/entities.py'

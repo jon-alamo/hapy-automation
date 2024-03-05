@@ -1,4 +1,4 @@
-import ha_control.register as register
+import hapy.register as register
 import unittest as ut
 import json
 

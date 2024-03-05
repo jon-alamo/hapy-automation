@@ -1,5 +1,5 @@
 from importlib.machinery import SourceFileLoader
-import ha_control.models as models
+import hapy.models as models
 
 
 entities_path = __file__.replace("devices.py", "entities.py")

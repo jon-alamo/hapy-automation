@@ -1,4 +1,4 @@
-import ha_control
+import hapy
 from importlib.machinery import SourceFileLoader
 
 entities_path = __file__.replace("automations.py", "entities.py")
@@ -8,7 +8,7 @@ entities = SourceFileLoader("entities", entities_path).load_module()
 devices = SourceFileLoader("devices", devices_path).load_module()
 
 
-class OnPressButton(ha_control.Automation):
+class OnPressButton(hapy.Automation):
 
     def init_condition(self):
         return devices.MainSwitch.remote_button_short_press_turn_on
@@ -17,7 +17,7 @@ class OnPressButton(ha_control.Automation):
         return entities.LightLivingDownLight01.services.turn_on()
 
 
-class OnLivingLightOn(ha_control.Automation):
+class OnLivingLightOn(hapy.Automation):
 
     def init_condition(self):
         return entities.LightLivingDownLight01.state.brightness_pct > 75

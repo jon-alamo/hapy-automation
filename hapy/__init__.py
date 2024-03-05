@@ -1,10 +1,10 @@
 import os
 import json
-import ha_control.register as register
-import ha_control.generators as generators
-import ha_control.ha_instance as ha_instance
-from ha_control.automations import Automation
-from ha_control.application import Application
+import hapy.register as register
+import hapy.generators as generators
+import hapy.ha_instance as ha_instance
+from hapy.automations import Automation
+from hapy.application import Application
 
 
 def generate_modules(directory, ha_url, ha_token):

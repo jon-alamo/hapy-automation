@@ -2,7 +2,7 @@ import dataclasses
 import typing
 from importlib.machinery import SourceFileLoader
 
-import ha_control.models as models
+import hapy.models as models
 
 domains_path = __file__.replace("entities.py", "domains.py")
 domains = SourceFileLoader("domains", domains_path).load_module()

@@ -1,4 +1,4 @@
-import ha_control.helpers as helpers
+import hapy.helpers as helpers
 
 types = {
     'number': float,

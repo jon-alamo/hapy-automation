@@ -1,6 +1,6 @@
 import re
 import pytz
-from ha_control.config import settings
+from hapy.config import settings
 from datetime import datetime, timezone
 
 tzname = settings.timezone

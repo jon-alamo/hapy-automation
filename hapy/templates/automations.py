@@ -1,6 +1,6 @@
 import logging
 
-from ha_control import Automation
+from hapy import Automation
 
 logger = logging.getLogger()
 

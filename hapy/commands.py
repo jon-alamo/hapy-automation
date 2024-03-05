@@ -2,10 +2,10 @@ import os
 import argparse
 import inspect
 import dotenv
-import ha_control
-import ha_control.templates.application as app_template
-import ha_control.templates.automations as automations_template
-import ha_control.config as config
+import hapy
+import hapy.templates.application as app_template
+import hapy.templates.automations as automations_template
+import hapy.config as config
 
 dotenv.load_dotenv()
 
@@ -43,7 +43,7 @@ def create_update_project(directory):
     create_application_template(directory, app_tmpl_source)
     auto_tmpl_source = inspect.getsource(automations_template)
     create_automations_template(directory, auto_tmpl_source)
-    ha_control.generate_modules(directory, ha_url, ha_token)
+    hapy.generate_modules(directory, ha_url, ha_token)
 
 
 def start_project():
