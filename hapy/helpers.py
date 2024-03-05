@@ -43,27 +43,30 @@ class Pythonize:
     def class_name(s):
         s = s.replace('_', '-').replace('.', '-').replace(' ', '-')
         s = ''.join([c.capitalize() for c in s.split('-')])
-        s = re.sub('[^0-9a-zA-Z_]', '', s)
-        return re.sub('^[^a-zA-Z_]+', '', s)
+        s = re.sub('[^0-9a-zA-Z_]', 'x', s)
+        s = re.sub('^[^a-zA-Z_]+', 'x', s)
+        if s in reserved_names:
+            s += '_'
+        return s
 
     @staticmethod
     def method_name(s):
         s = s.replace('_', '-').replace('.', '-').replace(' ', '-')
         s = '_'.join([c.lower() for c in s.split('-')])
-        s = re.sub('[^0-9a-zA-Z_]', '', s)
-        return re.sub('^[^a-zA-Z_]+', '', s)
-
-    @staticmethod
-    def parameter_name(s):
+        s = re.sub('[^0-9a-zA-Z_]', 'x', s)
+        s = re.sub('^[^a-zA-Z_]+', 'x', s)
         if s in reserved_names:
-            s = f'_{s}'
-        s = re.sub('[^0-9a-zA-Z_]', '', s)
-        return re.sub('^[^a-zA-Z_]+', '', s)
+            s += '_'
+        return s
+
+    @classmethod
+    def parameter_name(cls, s):
+        return cls.method_name(s)
 
 
 def get_device_class_name(device_name: [str | None], device_id: str) -> str:
     if device_name:
-        return Pythonize.class_name(device_name + device_id[-2:])
+        return Pythonize.class_name(device_name + '_' + device_id[-2:])
     return Pythonize.class_name(device_id)
 
 
