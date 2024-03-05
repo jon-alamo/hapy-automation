@@ -4,10 +4,10 @@ import json
 
 
 class TestFields(ut.TestCase):
-    domains_fixture = 'ha_control/tests/fixtures/domains.json'
-    devices_fixture = 'ha_control/tests/fixtures/devices.json'
-    entities_fixture = 'ha_control/tests/fixtures/entities.json'
-    states_fixture = 'ha_control/tests/fixtures/states.json'
+    domains_fixture = 'hapy/tests/fixtures/domains.json'
+    devices_fixture = 'hapy/tests/fixtures/devices.json'
+    entities_fixture = 'hapy/tests/fixtures/entities.json'
+    states_fixture = 'hapy/tests/fixtures/states.json'
 
     @staticmethod
     def get_fixture(path) -> list | dict:

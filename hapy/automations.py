@@ -71,7 +71,7 @@ class AutomationHandler(type):
 
 class Automation(metaclass=AutomationHandler):
     step_time = 0.5
-    time_out = 10
+    timeout = 10
 
     def __init__(self):
         self.force_exit = False
@@ -86,7 +86,7 @@ class Automation(metaclass=AutomationHandler):
         return True
 
     def is_time_out(self, t0):
-        return time.time() - t0 > self.time_out
+        return time.time() - t0 > self.timeout
 
     def run(self):
         if not self.init_condition():

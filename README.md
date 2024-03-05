@@ -1,11 +1,11 @@
-# ha_control
+# hapyautomation
 
 Basic lib to communicate with Home Assistant.
 
 ## Installation with pip
 
 ```bash
-pip install git+https://github.com/jon-alamo/ha_control.git
+pip install git+https://github.com/jon-alamo/hapy.git
 ```
 
 ## Usage

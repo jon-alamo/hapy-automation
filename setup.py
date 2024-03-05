@@ -28,7 +28,7 @@ setuptools.setup(
     install_requires=install_requires,
     entry_points={
         'console_scripts': [
-            'hapy-start = ha_control.commands:start_project',
+            'hapy-start = hapy.commands:start_project',
         ],
     },
 )

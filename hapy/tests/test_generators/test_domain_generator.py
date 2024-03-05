@@ -16,12 +16,12 @@ def execute_module(module_path):
 
 
 class TestFieldGenerator(ut.TestCase):
-    domains_fixture = 'ha_control/tests/fixtures/domains.json'
-    devices_fixture = 'ha_control/tests/fixtures/devices.json'
-    entities_fixture = 'ha_control/tests/fixtures/entities.json'
-    states_fixture = 'ha_control/tests/fixtures/states.json'
-    domains_module_path = 'ha_control/tests/modules/my_domains.py'
-    entities_module_path = 'ha_control/tests/modules/my_entities.py'
+    domains_fixture = 'hapy/tests/fixtures/domains.json'
+    devices_fixture = 'hapy/tests/fixtures/devices.json'
+    entities_fixture = 'hapy/tests/fixtures/entities.json'
+    states_fixture = 'hapy/tests/fixtures/states.json'
+    domains_module_path = 'hapy/tests/modules/my_domains.py'
+    entities_module_path = 'hapy/tests/modules/my_entities.py'
 
     def tearDown(self) -> None:
         shutil.rmtree(os.path.dirname(self.domains_module_path))
@@ -44,8 +44,8 @@ class TestFieldGenerator(ut.TestCase):
         register.register_entities(entities_data, reg_data)
         register.register_devices(devices_data, reg_data)
         os.mkdir(os.path.dirname(self.domains_module_path))
-        domains_module_path = 'ha_control/tests/modules/my_domains.py'
-        entities_module_path = 'ha_control/tests/modules/my_entities.py'
+        domains_module_path = 'hapy/tests/modules/my_domains.py'
+        entities_module_path = 'hapy/tests/modules/my_entities.py'
         domains.write_domain_module(reg_data, domains_module_path)
 
         entities.write_entities_module(
@@ -58,7 +58,7 @@ class TestFieldGenerator(ut.TestCase):
         domain_data = self.get_fixture(self.domains_fixture)
         reg_data = {}
         register.register_domains(domain_data, reg_data)
-        module_path = 'ha_control/tests/modules/my_domains.py'
+        module_path = 'hapy/tests/modules/my_domains.py'
         domains.write_domain_module(reg_data, module_path)
         execute_module(module_path)
 

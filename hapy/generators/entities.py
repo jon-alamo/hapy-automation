@@ -2,7 +2,7 @@ import hapy.helpers as helpers
 
 
 entity_tmpl = """
-import ha_control.models as models
+import hapy.models as models
 import {domains_route} as my_domains
 import dataclasses
 import typing

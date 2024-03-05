@@ -1,12 +1,12 @@
 from importlib.machinery import SourceFileLoader
 import unittest
 import hapy.automations as automations
-import hapy.event_handler as event_handler
+import hapy.events as events
 
 
-entities_path = 'ha_control/tests/fixtures/modules/entities.py'
-devices_path = 'ha_control/tests/fixtures/modules/devices.py'
-automations_path = 'ha_control/tests/fixtures/modules/automations.py'
+entities_path = 'hapy/tests/fixtures/modules/entities.py'
+devices_path = 'hapy/tests/fixtures/modules/devices.py'
+automations_path = 'hapy/tests/fixtures/modules/automations.py'
 
 
 class TestAutomationsBindings(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestAutomationsBindings(unittest.TestCase):
             'entity_id': 'light.living_down_light_01',
             'new_state': {'state': 'on', 'attributes': {'brightness_pct': 100}}
         }
-        event_handler.handle_state_change(data)
+        events.handle_state_change(data)
         self.assertIn(
             my_aut.OnLivingLightOn,
             automations.AutomationHandler.to_check_automations

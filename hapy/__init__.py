@@ -2,14 +2,14 @@ import os
 import json
 import hapy.register as register
 import hapy.generators as generators
-import hapy.ha_instance as ha_instance
+import hapy.homeassistant as homeassistant
 from hapy.automations import Automation
 from hapy.application import Application
 
 
 def generate_modules(directory, ha_url, ha_token):
     os.makedirs(directory, exist_ok=True)
-    ha = ha_instance.HAInstance(ha_url=ha_url, ha_token=ha_token)
+    ha = homeassistant.HAInstance(ha_url=ha_url, ha_token=ha_token)
     cur_reg = get_registry(directory)
     reg_data = register.get_registry(ha, directory=directory, reg_data=cur_reg)
     domains_module_path = f'{directory}/domains.py'

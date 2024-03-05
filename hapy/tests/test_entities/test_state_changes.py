@@ -2,12 +2,12 @@ from importlib.machinery import SourceFileLoader
 from datetime import datetime, timezone
 import unittest
 
-import hapy.event_handler as event_handler
+import hapy.events as events
 
 
-entities_path = 'ha_control/tests/fixtures/modules/entities.py'
-devices_path = 'ha_control/tests/fixtures/modules/devices.py'
-automations_path = 'ha_control/tests/fixtures/modules/automations.py'
+entities_path = 'hapy/tests/fixtures/modules/entities.py'
+devices_path = 'hapy/tests/fixtures/modules/devices.py'
+automations_path = 'hapy/tests/fixtures/modules/automations.py'
 
 
 class TestStateChanges(unittest.TestCase):
@@ -30,9 +30,9 @@ class TestStateChanges(unittest.TestCase):
                 'attributes': {'brightness': 0}
             }
         }
-        event_handler.handle_state_change(data)
+        events.handle_state_change(data)
 
         self.assertTrue(entities.LightLivingDownLight01.state.state_value, 'on')
         self.assertTrue(entities.LightLivingDownLight01.state.old.state_value, 'off')
-        self.assertFalse(entities.LightLivingDownLight01.state.changed(seconds=0))
+        self.assertFalse(entities.LightLivingDownLight01.state.changed(offset=0))
         self.assertTrue(entities.LightLivingDownLight01.state.changed())

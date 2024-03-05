@@ -2,7 +2,7 @@ import hapy.helpers as helpers
 import importlib
 
 module_tmpl = """
-import ha_control.models as models
+import hapy.models as models
 import entities as my_entities
 """
 

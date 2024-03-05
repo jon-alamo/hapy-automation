@@ -1,6 +1,6 @@
 from functools import wraps
 from types import FunctionType
-import hapy.ha_instance as ha_instance
+import hapy.homeassistant as homeassistant
 import hapy.helpers as helpers
 from hapy.config import settings
 
@@ -37,7 +37,7 @@ class DomainFactory(type):
         return type.__new__(cls, classname, bases, new_class_dict)
 
 
-class HAInstance(ha_instance.HAInstance):
+class HAInstance(homeassistant.HAInstance):
     def __init__(self):
         super().__init__(ha_url=settings.ha_url, ha_token=settings.ha_token)
 

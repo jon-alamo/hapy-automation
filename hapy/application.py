@@ -8,33 +8,32 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-import hapy.events as event_handler
+import hapy.events as events
 import hapy.automations as automations
 import hapy.models as models
-
+import hapy.helpers as helpers
 
 logger = logging.getLogger('Application')
 
 
 init_message = """
-::::::::::::::::::: Running :::::::::::::::::::::::::
-App connected to Home Assistant instance at: {ha_url}
+::::::::: hapy automations running :::::::::::
+Connected to Home Assistant instance at: 
+{ha_url}
 
-- Registered automations:   {automations}
-- Registered devices:       {devices}
-- Registered entities:      {entities}
-
-:::::::::::::::::::::::::::::::::::::::::::::::::::::
-
+- {aut:<5}  automations
+- {dev:<5}  devices
+- {ent:<5}  entities
+::::::::::::::::::::::::::::::::::::::::::::::
 """
 
 reload_message = """
-::::::::::::::::::: Reloading :::::::::::::::::::::::
+::::::::: hapy automations reloaded ::::::::::
+Reloaded automations at:
+{dt}
 
-- Registered automations:   {automations}
-
-:::::::::::::::::::::::::::::::::::::::::::::::::::::
-
+- {aut:<5} automations
+::::::::::::::::::::::::::::::::::::::::::::::
 """
 
 
@@ -86,12 +85,12 @@ class Application(websocket.WebSocketApp):
         return self.sock.send(json.dumps(data))
 
     def on_open(self, ws):
-        self.send(event_handler.send_auth_message(self.ha_token))
-        self.send(event_handler.subscribe_to_state_changes())
-        self.send(event_handler.subscribe_to_zha_events())
+        self.send(events.send_auth_message(self.ha_token))
+        self.send(events.subscribe_to_state_changes())
+        self.send(events.subscribe_to_zha_events())
 
     def on_message(self, ws, message):
-        event_handler.handle_message(json.loads(message))
+        events.handle_message(json.loads(message))
         automations.AutomationHandler.handle_exit_conditions()
         automations.AutomationHandler.run_automations()
         models.DeviceHandler.reset_fired_actions()
@@ -115,15 +114,18 @@ class Application(websocket.WebSocketApp):
         automations.AutomationHandler.reset_automations()
         self.recursively_import_modules(self.automations_module)
         current_automations = len(automations.AutomationHandler.automations)
-        print(reload_message.format(automations=current_automations))
+        print(reload_message.format(
+            aut=current_automations,
+            dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
+        ))
         self._reload_timer = time.time()
 
     def run_forever(self, *args, **kwargs):
         print(init_message.format(
             ha_url=self.ha_url,
-            automations=len(automations.AutomationHandler.automations),
-            devices=len(models.DeviceHandler.devices),
-            entities=len(models.EntityHandler.entities)
+            aut=len(automations.AutomationHandler.automations),
+            dev=len(models.DeviceHandler.devices),
+            ent=len(models.EntityHandler.entities)
         ))
         models.EntityHandler.read_states()
         super().run_forever(*args, **kwargs)

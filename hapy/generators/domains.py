@@ -9,7 +9,7 @@ types = {
 INDENT = 4
 
 
-domain_tmpl = "import ha_control.models as models"
+domain_tmpl = "import hapy.models as models"
 
 
 def generate_field(field_name, selector, example=None, required=False):
