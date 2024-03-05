@@ -66,7 +66,7 @@ class Pythonize:
 
 def get_device_class_name(device_name: [str | None], device_id: str) -> str:
     if device_name:
-        return Pythonize.class_name(device_name + '_' + device_id[-2:])
+        return Pythonize.class_name(device_name) + '_' + device_id[-2:]
     return Pythonize.class_name(device_id)
 
 
