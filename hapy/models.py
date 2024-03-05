@@ -93,7 +93,6 @@ class State:
         self.last_updated = None
         self.set_state(state_value, last_changed, last_updated, **attributes)
 
-
     def set_state(self, state_value, last_changed, last_updated, **attributes):
         self.state_value = state_value
         self.last_changed = helpers.parse_date(last_changed)
