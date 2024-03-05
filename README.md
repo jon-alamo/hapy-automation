@@ -1,6 +1,13 @@
 # hapyautomation
+### Homeassistant (Pure)Python Automation Tool.
 
-Basic lib to communicate with Home Assistant.
+This tool implements a simple automation flow for Home Assistant using Python. 
+It comes with a self-discovery feature that generates Python modules where 
+entities, devices and services are type-hinted and bound statically, so the 
+IDE can provide auto-completion and type checking when creating automations 
+based on state changes in entities or action triggers in devices (if using ZHA 
+Plugin).
+
 
 ## Installation with pip
 
