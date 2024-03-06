@@ -99,7 +99,8 @@ class Application(websocket.WebSocketApp):
         logger.error(error)
 
     def recursively_import_modules(self, module, imported=None):
-        importlib.reload(module)
+        if 'hapy' not in module.__name__:
+            importlib.reload(module)
         imported = imported or []
         for name, mod in vars(self.automations_module).items():
             if name in imported:
