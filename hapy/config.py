@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     ha_url: str
     ha_token: str
     timezone: str = 'CET'
-    loglevel: str = 'WARNING'
+    log_level: str = 'WARNING'
 
     class Config:
         env_file = '.env'
@@ -16,7 +16,7 @@ settings = Settings()
 
 
 logging.basicConfig(
-    level=settings.loglevel.upper(),
+    level=settings.log_level.upper(),
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )

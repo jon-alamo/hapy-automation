@@ -25,6 +25,7 @@ To start a new automation project, first create a .env file with the following:
 ```bash
 HA_URL=http://<your-ha-instance>:<port>
 HA_TOKEN=<your-ha-token>
+LOG_LEVEL=INFO
 ```
 
 Then, create the project structure and self-discovering feature by running the 
