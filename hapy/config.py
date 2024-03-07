@@ -3,7 +3,8 @@ import logging
 
 
 class Settings(BaseSettings):
-    ha_url: str
+    ha_api_url: str
+    ha_ws_url: str
     ha_token: str
     timezone: str = 'CET'
     log_level: str = 'INFO'

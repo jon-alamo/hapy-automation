@@ -34,8 +34,10 @@ def generate_side_files(directory):
     env_file = os.path.join(directory, '.env')
     if not os.path.exists(env_file):
         with open(env_file, 'w') as f:
-            f.write(f'HA_URL={config.settings.ha_url}\n')
+            f.write(f'HA_API_URL={config.settings.ha_api_url}\n')
+            f.write(f'HA_WS_URL={config.settings.ha_ws_url}\n')
             f.write(f'HA_TOKEN={config.settings.ha_token}')
+            f.write(f'LOG_LEVEL={config.settings.log_level}\n')
     gitignore_file = os.path.join(directory, '.gitignore')
     if not os.path.exists(gitignore_file):
         with open(gitignore_file, 'w') as f:
@@ -46,10 +48,11 @@ def generate_side_files(directory):
 
 
 def create_update_project(directory):
-    ha_url = config.settings.ha_url
+    ha_api_url = config.settings.ha_api_url
+    ha_ws_url = config.settings.ha_ws_url
     ha_token = config.settings.ha_token
 
-    if not ha_url:
+    if not ha_api_url:
         raise ValueError('HA_URL needs to be defined in .env file.')
     if not ha_token:
         raise ValueError('HA_TOKEN needs to be defined in .env file.')
@@ -59,7 +62,7 @@ def create_update_project(directory):
     create_application_template(directory, app_tmpl_source)
     auto_tmpl_source = inspect.getsource(automations_template)
     create_automations_template(directory, auto_tmpl_source)
-    hapy.generate_modules(directory, ha_url, ha_token)
+    hapy.generate_modules(directory, ha_api_url, ha_ws_url, ha_token)
 
 
 def start_project():

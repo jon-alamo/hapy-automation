@@ -43,7 +43,7 @@ class DomainFactory(type):
 
 class HAInstance(homeassistant.HAInstance):
     def __init__(self):
-        super().__init__(ha_url=settings.ha_url, ha_token=settings.ha_token)
+        super().__init__(ha_api_url=settings.ha_api_url, ha_ws_url=settings.ha_ws_url, ha_token=settings.ha_token)
 
 
 class Domain(metaclass=DomainFactory):

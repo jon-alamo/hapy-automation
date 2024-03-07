@@ -38,10 +38,6 @@ Reloaded automations at:
 """
 
 
-def get_ws_url(ha_url):
-    return f"{ha_url.replace('https', 'ws').replace('http', 'ws')}/api/websocket"
-
-
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, callback):
         super(FileChangeHandler, self).__init__()
@@ -55,10 +51,10 @@ class FileChangeHandler(FileSystemEventHandler):
 
 class Application(websocket.WebSocketApp):
 
-    def __init__(self, automations_module, ha_url, ha_token, registry):
-        self.ha_url = ha_url
+    def __init__(self, automations_module, ha_api_url, ha_ws_url, ha_token, registry):
+        self.ha_api_url = ha_api_url
+        self.ha_ws_url = ha_ws_url
         self.ha_token = ha_token
-        self.ws_url = get_ws_url(ha_url)
         self.registry = registry
         self._id = 0
         self.automations_module = automations_module
@@ -70,7 +66,7 @@ class Application(websocket.WebSocketApp):
         self._reload_timer = time.time()
         self._reload_wait = 1
         super().__init__(
-            self.ws_url,
+            self.ha_ws_url,
             on_open=self.on_open,
             on_message=self.on_message,
             on_error=self.on_error,
@@ -124,7 +120,7 @@ class Application(websocket.WebSocketApp):
 
     def run_forever(self, *args, **kwargs):
         print(init_message.format(
-            ha_url=self.ha_url,
+            ha_url=self.ha_api_url.split('/api')[0],
             aut=len(automations.AutomationHandler.automations),
             dev=len(models.DeviceHandler.devices),
             ent=len(models.EntityHandler.entities)

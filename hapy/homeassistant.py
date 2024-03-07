@@ -71,11 +71,10 @@ auth_headers = {
 
 class HAInstance:
 
-    def __init__(self, ha_url, ha_token):
+    def __init__(self, ha_api_url, ha_ws_url, ha_token):
         self._global_id = 0
-        self._ha_url = ha_url
-        self._api_url = f"{ha_url}/api"
-        self._ws_url = f"{ha_url.replace('https', 'ws').replace('http', 'ws')}/api/websocket"
+        self._ha_api_url = ha_api_url
+        self._ha_ws_url = ha_ws_url
         self._ha_token = ha_token
         self._auth_headers = auth_headers
         self._auth_headers['Authorization'] = self._auth_headers['Authorization'].format(token=ha_token)
@@ -95,7 +94,7 @@ class HAInstance:
         ws.recv()
 
     def _ws_connect(self):
-        self._socket = websocket.create_connection(self._ws_url)
+        self._socket = websocket.create_connection(self._ha_ws_url)
         self._authenticate(self._socket)
 
     def _ws_send(self, data, data_id=None):
@@ -148,33 +147,33 @@ class HAInstance:
         return self._ws_send(self.get_message('get_entities'))
 
     def get_state(self, entity_id):
-        url = f'{self._api_url}/{api_ref["entity_state"].format(entity_id=entity_id)}'
+        url = f'{self._ha_api_url}/{api_ref["entity_state"].format(entity_id=entity_id)}'
         return self._api_request(url)
 
     def get_states(self):
-        url = f'{self._api_url}/{api_ref["states"]}'
+        url = f'{self._ha_api_url}/{api_ref["states"]}'
         return self._api_request(url)
 
     def get_services(self):
-        url = f'{self._api_url}/{api_ref["services"]}'
+        url = f'{self._ha_api_url}/{api_ref["services"]}'
         return self._api_request(url)
 
     def call_service(self, domain, service, data):
-        url = f'{self._api_url}/{api_ref["service"].format(domain=domain, service=service)}'
+        url = f'{self._ha_api_url}/{api_ref["service"].format(domain=domain, service=service)}'
         return self._api_request(url, method='post', data=data)
 
     def get_config(self):
-        url = f'{self._api_url}/{api_ref["config"]}'
+        url = f'{self._ha_api_url}/{api_ref["config"]}'
         return self._api_request(url)
 
     def get_events(self):
-        url = f'{self._api_url}/{api_ref["events"]}'
+        url = f'{self._ha_api_url}/{api_ref["events"]}'
         return self._api_request(url)
 
     def get_logbook(self, timestamp):
-        url = f'{self._api_url}/{api_ref["logbook"].format(timestamp=timestamp)}'
+        url = f'{self._ha_api_url}/{api_ref["logbook"].format(timestamp=timestamp)}'
         return self._api_request(url)
 
     def get_device(self, device_id):
-        url = f'{self._api_url}/{api_ref["devices"].format(device_id=device_id)}'
+        url = f'{self._ha_api_url}/{api_ref["devices"].format(device_id=device_id)}'
         return self._api_request(url)
