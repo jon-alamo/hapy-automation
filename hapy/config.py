@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     ha_url: str
     ha_token: str
     timezone: str = 'CET'
-    log_level: str = 'WARNING'
+    log_level: str = 'INFO'
 
     class Config:
         env_file = '.env'
