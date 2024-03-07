@@ -1,8 +1,11 @@
 import time
+import logging
 import threading
 import sys
 import types
 import hapy.models as models
+
+logger = logging.getLogger('hapy.automations')
 
 register_modules = ['entities', 'devices']
 
@@ -20,7 +23,9 @@ class AutomationHandler(type):
     @classmethod
     def register_change(cls, item):
         if item.id in cls.automation_bindings:
-            cls.to_check_automations.extend(cls.automation_bindings[item.id])
+            automation = cls.automation_bindings[item.id]
+            cls.to_check_automations.extend(automation)
+            logging.info(f'register_change: {automation.name}')
 
     @classmethod
     def is_found_object(cls, obj):
@@ -53,6 +58,9 @@ class AutomationHandler(type):
             if obj.id not in cls.automation_bindings:
                 cls.automation_bindings[obj.id] = []
             cls.automation_bindings[obj.id].append(new_class)
+            logger.info(
+                f'make_bindings: {new_class.__name__} bound to {obj.id}.'
+            )
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
@@ -73,6 +81,7 @@ class AutomationHandler(type):
         for name in list(cls.running_automations.keys()):
             automation = cls.running_automations[name]
             if automation.exit_condition():
+                logger.info(f'handle_exit_conditions: {name} leaving.')
                 automation.force_exit = True
                 cls.running_automations.pop(name)
 
@@ -82,6 +91,7 @@ class AutomationHandler(type):
             automation.__name__: automation()
             for automation in cls.to_check_automations
         }
+        logger.info(f'run_automations: {len(to_run)} automations to the queue.')
         cls.running_automations.update(to_run)
         cls.to_check_automations = []
         for automation in to_run.values():
@@ -110,13 +120,34 @@ class Automation(metaclass=AutomationHandler):
 
     def run(self):
         if not self.init_condition():
+            logger.info(f'{self.__class__.__name__}.run: did not meet init '
+                f'condition. Exiting.'
+            )
             return
+        logger.info(
+            f'{self.__class__.__name__}.run: met init condition. '
+            f'Running action.'
+        )
         self.action()
         t0 = time.time()
+        loops = 0
         while not self.exit_condition():
+            loops += 1
             self.action()
             time.sleep(self.step_time)
             if self.is_time_out(t0):
+                logger.info(
+                    f'{self.__class__.__name__}.run: timed out. Leaving.'
+                )
                 return
             if self.force_exit:
+                logger.info(
+                    f'{self.__class__.__name__}.run was forced to exit.'
+                    f' Leaving.'
+                )
                 return
+
+        logger.info(
+            f'{self.__class__.__name__}.run: met exit condition after '
+            f'{loops} loops. Leaving.'
+        )

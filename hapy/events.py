@@ -32,23 +32,34 @@ def send_auth_message(ha_token):
     }
 
 
+def get_differences(old, new):
+    old_data = {'state_value': old.get('state'), **old.get('attributes')}
+    new_data = {'state_value': new.get('state'), **new.get('attributes')}
+    return ', '.join([
+        f'{k} changed ({old_data[k]} -> {new_data[k]})' for k in old_data
+        if old_data[k] != new_data[k]
+    ])
+
+
 def handle_state_change(data):
     entity = models.EntityHandler.entities.get(data['entity_id'])
     if entity:
         automations.AutomationHandler.register_change(entity)
         entity.state.set_from_state_event(data)
+        changes = get_differences(data['old_state'], data['new_state'])
+        logger.info(f'handle_state_change: {entity.entity_id}: {changes}')
 
 
 def handle_zha_event(data):
     device = models.DeviceHandler.devices.get(data['device_id'])
     if device and device.quirk is not None:
-        logger.info(f'Handling ZHA event: {data}')
+        logger.info(f'handle_zha_event: {data}')
         automations.AutomationHandler.register_change(device)
         device.handle_action_data(data)
 
 
 def unknown_event(data):
-    print(f'Unknown Event: {data}')
+    logger.info(f'unknown_event: {data}')
 
 
 event_handlers = {
@@ -58,6 +69,7 @@ event_handlers = {
 
 
 def handle_message(message):
+    logger.info(f'handle_message: {message}')
     if message['type'] != 'event':
         return
     event = message['event']

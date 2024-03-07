@@ -3,7 +3,8 @@ import logging
 import websocket
 import requests
 
-logger = logging.getLogger('HAInstance')
+logger = logging.getLogger('homeassistant')
+
 
 ws_ref = {
     'auth_message': {

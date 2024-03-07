@@ -1,8 +1,12 @@
+import logging
 from functools import wraps
 from types import FunctionType
 import hapy.homeassistant as homeassistant
 import hapy.helpers as helpers
 from hapy.config import settings
+
+
+logger = logging.getLogger('models')
 
 
 def has_new_state(state):
@@ -159,6 +163,9 @@ class DeviceHandler(type):
         for device_id, action in cls.fired_actions:
             device = cls.devices.get(device_id)
             if device:
+                logger.info(
+                    f'reset_fired_actions: {device.__name__}.{action} released'
+                )
                 setattr(device, action, False)
         cls.fired_actions = []
 
@@ -180,6 +187,11 @@ class Device(metaclass=DeviceHandler):
                 if hasattr(cls, action):
                     setattr(cls, action, True)
                     DeviceHandler.fired_actions.append((cls.device_id, action))
+                    logger.info(
+                        f'handle_action_data: '
+                        f'{cls.devices[cls.device_id].__name__}.{action} fired'
+                    )
+
 
     @classmethod
     @property

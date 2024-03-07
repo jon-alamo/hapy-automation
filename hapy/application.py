@@ -13,6 +13,7 @@ import hapy.automations as automations
 import hapy.models as models
 import hapy.helpers as helpers
 
+
 logger = logging.getLogger('Application')
 
 
