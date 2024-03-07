@@ -23,9 +23,11 @@ class AutomationHandler(type):
     @classmethod
     def register_change(cls, item):
         if item.id in cls.automation_bindings:
-            automation = cls.automation_bindings[item.id]
-            cls.to_check_automations.extend(automation)
-            logging.info(f'register_change: {automation.name}')
+            automations = cls.automation_bindings[item.id]
+            cls.to_check_automations.extend(automations)
+            logging.info(
+                f'register_change: {item.id} triggering {automations}'
+            )
 
     @classmethod
     def is_found_object(cls, obj):

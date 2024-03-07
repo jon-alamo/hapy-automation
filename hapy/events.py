@@ -33,8 +33,8 @@ def send_auth_message(ha_token):
 
 
 def get_differences(old, new):
-    old_data = {'state_value': old.get('state'), **old.get('attributes')}
-    new_data = {'state_value': new.get('state'), **new.get('attributes')}
+    old_data = {'state_value': old.get('state'), **old.get('attributes', {})}
+    new_data = {'state_value': new.get('state'), **new.get('attributes', {})}
     return ', '.join([
         f'{k} changed ({old_data[k]} -> {new_data[k]})' for k in old_data
         if old_data[k] != new_data[k]
@@ -46,7 +46,7 @@ def handle_state_change(data):
     if entity:
         automations.AutomationHandler.register_change(entity)
         entity.state.set_from_state_event(data)
-        changes = get_differences(data['old_state'], data['new_state'])
+        changes = get_differences(data.get('old_state', {}), data.get('new_state', {}))
         logger.info(f'handle_state_change: {entity.entity_id}: {changes}')
 
 
