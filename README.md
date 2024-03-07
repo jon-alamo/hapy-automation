@@ -23,9 +23,11 @@ pip install git+https://github.com/jon-alamo/hapy-automation.git
 ### Starting new project
 To start a new automation project, first create a .env file with the following:
 ```bash
-HA_URL=http://<your-ha-instance>:<port>
+HA_API_URL=http://<your-ha-instance>:<port>/api
+HA_WS_URL=ws://<your-ha-instance>:<port>/api/websocket
 HA_TOKEN=<your-ha-token>
 LOG_LEVEL=INFO
+TIMEZONE=Europe/Madrid
 ```
 
 Then, create the project structure and self-discovering feature by running the 
