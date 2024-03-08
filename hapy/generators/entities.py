@@ -61,12 +61,19 @@ def get_dataclass_fields(attributes: dict):
     return '\n'.join(fields)
 
 
+def get_state_attributes(attributes: dict):
+    return {
+        helpers.Pythonize.parameter_name(k): v for k, v in attributes.items()
+    }
+
+
 def get_instantiate_definition(entity_id, entity_data, register):
     class_name = helpers.Pythonize.class_name(entity_id)
     unique_id = entity_data.get('unique_id', None)
     name = entity_data.get('name', entity_id)
     attributes = entity_data.get('attributes') or {}
     domain_name = entity_id.split('.')[0]
+    state_attributes = get_state_attributes(attributes)
     dataclass_fields = get_dataclass_fields(attributes)
     if domain_name in register['domains']:
         domain_class = helpers.Pythonize.class_name(domain_name)
@@ -78,7 +85,7 @@ def get_instantiate_definition(entity_id, entity_data, register):
         entity_id=entity_id,
         unique_id=unique_id,
         name=name,
-        attributes=attributes,
+        attributes=state_attributes,
         domain_ref=domain_ref,
         dataclass_fields=dataclass_fields,
         device_id=entity_data.get('device_id', None)

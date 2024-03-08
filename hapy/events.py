@@ -69,10 +69,11 @@ event_handlers = {
 
 
 def handle_message(message):
-    logger.info(f'handle_message: {message}')
+    logger.info(f'handle_message: {str(message)[:100]} ...')
     if message['type'] != 'event':
         return
     event = message['event']
     event_handler = event_handlers.get(event['event_type'], unknown_event)
     data = event['data']
     event_handler(data)
+

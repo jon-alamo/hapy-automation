@@ -102,7 +102,8 @@ class State:
         self.last_changed = helpers.parse_date(last_changed)
         self.last_updated = helpers.parse_date(last_updated)
         for key, value in attributes.items():
-            setattr(self, key, value)
+            pythonized = helpers.Pythonize.parameter_name(key)
+            setattr(self, pythonized, value)
 
     def set_from_state_event(self, event_data):
         new_state = event_data.get('new_state')
