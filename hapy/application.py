@@ -4,6 +4,7 @@ import logging
 import importlib
 import types
 import time
+import ssl
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -126,4 +127,6 @@ class Application(websocket.WebSocketApp):
             ent=len(models.EntityHandler.entities)
         ))
         models.EntityHandler.read_states()
+        if 'wss' in self.ha_ws_url:
+            kwargs['sslopt'] = {"cert_reqs": ssl.CERT_NONE}
         super().run_forever(*args, **kwargs)
