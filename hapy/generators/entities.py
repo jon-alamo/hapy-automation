@@ -50,7 +50,8 @@ def get_dataclass_field(key, value, indent_level=2):
         field_type = 'typing.Any'
     else:
         field_type = type(value).__name__
-    return f'{" " * indent}{key}: {field_type}'
+    parameter = helpers.Pythonize.parameter_name(key)
+    return f'{" " * indent}{parameter}: {field_type}'
 
 
 def get_dataclass_fields(attributes: dict):
