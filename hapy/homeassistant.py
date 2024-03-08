@@ -2,6 +2,7 @@ import json
 import logging
 import websocket
 import requests
+import ssl
 
 logger = logging.getLogger('homeassistant')
 
@@ -94,7 +95,10 @@ class HAInstance:
         ws.recv()
 
     def _ws_connect(self):
-        self._socket = websocket.create_connection(self._ha_ws_url)
+        kwargs = {}
+        if self._ha_ws_url.startswith('wss'):
+            kwargs['sslopt'] = {'cert_reqs': ssl.CERT_NONE}
+        self._socket = websocket.create_connection(self._ha_ws_url, **kwargs)
         self._authenticate(self._socket)
 
     def _ws_send(self, data, data_id=None):
