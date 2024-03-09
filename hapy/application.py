@@ -5,6 +5,7 @@ import importlib
 import types
 import time
 import ssl
+import os
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -47,7 +48,10 @@ class FileChangeHandler(FileSystemEventHandler):
     def on_any_event(self, event):
         if event.is_directory:
             return
-        self.callback()
+        filename = os.path.basename(event.src_path)
+        if filename.endswith(".py"):
+            logger.info(f"File {filename} has been changed, reloading ...")
+            self.callback()
 
 
 class Application(websocket.WebSocketApp):
@@ -65,7 +69,7 @@ class Application(websocket.WebSocketApp):
         )
         self.observer.start()
         self._reload_timer = time.time()
-        self._reload_wait = 1
+        self._reload_wait = 5
         super().__init__(
             self.ha_ws_url,
             on_open=self.on_open,
@@ -113,6 +117,7 @@ class Application(websocket.WebSocketApp):
         automations.AutomationHandler.reset_automations()
         self.recursively_import_modules(self.automations_module)
         current_automations = len(automations.AutomationHandler.automations)
+        models.EntityHandler.read_states()
         print(reload_message.format(
             aut=current_automations,
             dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
