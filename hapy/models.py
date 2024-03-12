@@ -77,10 +77,7 @@ class EntityHandler(type):
                     last_updated=state.get('last_updated'),
                     ** state.get('attributes')
                 )
-                old = entity.state.__class__()
-                old.set_state(**state_attrs)
                 entity.state.set_state(**state_attrs)
-                entity.state.old = old
 
 
 class Entity(metaclass=EntityHandler):
@@ -95,7 +92,7 @@ class Entity(metaclass=EntityHandler):
 class State:
 
     def __init__(self, state_value=None, last_changed=None, last_updated=None, **attributes):
-        self.old = None
+        self.old = self
         self.state_value = None
         self.last_changed = None
         self.last_updated = None
