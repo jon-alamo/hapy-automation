@@ -80,6 +80,7 @@ class EntityHandler(type):
                 old = entity.state.__class__()
                 old.set_state(**state_attrs)
                 entity.state.set_state(**state_attrs)
+                entity.state.old = old
 
 
 class Entity(metaclass=EntityHandler):
