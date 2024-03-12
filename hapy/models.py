@@ -71,12 +71,15 @@ class EntityHandler(type):
             entity_id = state.get('entity_id')
             if entity_id in cls.entities:
                 entity = cls.entities.get(entity_id)
-                entity.state.set_state(
+                state_attrs = dict(
                     state_value=state.get('state'),
                     last_changed=state.get('last_changed'),
                     last_updated=state.get('last_updated'),
-                    **state.get('attributes')
+                    ** state.get('attributes')
                 )
+                old = entity.state.__class__()
+                old.set_state(**state_attrs)
+                entity.state.set_state(**state_attrs)
 
 
 class Entity(metaclass=EntityHandler):
