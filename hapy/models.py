@@ -99,7 +99,7 @@ class State:
         self.set_state(state_value, last_changed, last_updated, **attributes)
 
     def set_state(self, state_value, last_changed, last_updated, **attributes):
-        self.state_value = state_value
+        self.state_value = helpers.parse_string_value(state_value)
         self.last_changed = helpers.parse_date(last_changed)
         self.last_updated = helpers.parse_date(last_updated)
         for key, value in attributes.items():

@@ -2,6 +2,8 @@ import re
 import pytz
 from hapy.config import settings
 from datetime import datetime, timezone
+import dateutil.parser as dt_parser
+
 
 tzname = settings.timezone
 tz = pytz.timezone(tzname)
@@ -18,6 +20,18 @@ def parse_date(last_changed):
         return last_changed
     else:
         return datetime.now(tz)
+
+
+def parse_string_value(string):
+    try:
+        return float(string) if '.' in string else int(string)
+    except ValueError:
+        pass
+    try:
+        return dt_parser.parse(string).astimezone(tz)
+    except dt_parser.ParserError:
+        pass
+    return string
 
 
 INDENT = 4
