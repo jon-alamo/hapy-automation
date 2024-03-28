@@ -96,6 +96,9 @@ class State:
         self.state_value = None
         self.last_changed = None
         self.last_updated = None
+        state_value = state_value if state_value else attributes.get('state')
+        last_changed = last_changed if last_changed else attributes.get('last_changed')
+        last_updated = last_updated if last_updated else attributes.get('last_updated')
         self.set_state(state_value, last_changed, last_updated, **attributes)
 
     def set_state(self, state_value, last_changed, last_updated, **attributes):
