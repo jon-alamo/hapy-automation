@@ -6,7 +6,8 @@ install_requires = [
     'watchdog',
     'zha-quirks',
     'pydantic-settings',
-    'pytz'
+    'pytz',
+    'python-dateutil'
 ]
 
 
