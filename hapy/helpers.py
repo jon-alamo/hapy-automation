@@ -22,16 +22,11 @@ def parse_date(last_changed):
         return datetime.now(tz)
 
 
-def parse_string_value(string):
+def parse_string_value(string: str | None):
     try:
         return float(string) if '.' in string else int(string)
-    except ValueError:
-        pass
-    try:
-        return dt_parser.parse(string).astimezone(tz)
-    except dt_parser.ParserError:
-        pass
-    return string
+    except (ValueError, TypeError):
+        return string
 
 
 INDENT = 4
