@@ -1,10 +1,8 @@
 # hapy-automation
 
-#### !! project under development. It may contain bugs or unexpected behaviours
-
 ### Homeassistant Python Automation Tool.
 
-This tool implements a simple automation flow for Home Assistant using Python. 
+Simple automation flow for Home Assistant using Python.
 It comes with a self-discovery feature that generates Python modules where 
 entities, devices and services are type-hinted and bound statically, so the 
 IDE can provide auto-completion and type checking when creating automations 
