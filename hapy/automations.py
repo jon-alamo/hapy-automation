@@ -31,9 +31,10 @@ class AutomationHandler(type):
 
     @classmethod
     def make_bindings(cls, new_class):
-        if new_class.base_automation:
+        try:
+            new_class().init_condition()
+        except:
             return
-        new_class().init_condition()
         for entity_id in models.EntityHandler.track_access:
             if entity_id not in cls.automation_bindings:
                 cls.automation_bindings[entity_id] = []
@@ -88,7 +89,6 @@ class AutomationHandler(type):
 
 
 class Automation(metaclass=AutomationHandler):
-    base_automation = False
     step_time = 0.5
     timeout = 10
 
