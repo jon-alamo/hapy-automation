@@ -5,6 +5,15 @@ import pkgutil
 import importlib
 import inspect
 
+
+state_keys = {
+    'last_changed': ['last_changed'],
+    'last_updated': ['last_updated'],
+    'state_value': ['state']
+
+}
+
+
 entity_keys = {
     'id': ['entity_id'],
     'unique_id': ['unique_id'],
@@ -50,6 +59,12 @@ def populate_dict(source_dict, mapping):
     return target_dict
 
 
+def parse_state_data(state_data):
+    return {
+        k: helpers.parse_string_value(v) for k, v in state_data.items()
+    }
+
+
 def register_entity(entity_data, register):
     if 'entity_id' not in entity_data:
         raise ValueError('Entity data must contain an entity_id')
@@ -60,6 +75,11 @@ def register_entity(entity_data, register):
         register['entities'] = {}
 
     data = populate_dict(entity_data, entity_keys)
+    state_data = populate_dict(entity_data, state_keys)
+    state_data = parse_state_data(state_data)
+    if 'attributes' not in data or data.get('attributes') is None:
+        data['attributes'] = {}
+    data['attributes'].update(state_data)
 
     # Register entity
     if entity_id not in register['entities']:
