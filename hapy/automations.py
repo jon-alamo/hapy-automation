@@ -33,7 +33,11 @@ class AutomationHandler(type):
     def make_bindings(cls, new_class):
         try:
             new_class().init_condition()
-        except:
+        except Exception as e:
+            logger.warning(
+                f'{new_class.__name__} not bound to any entity or device due to '
+                f'init_condition error: {e}.'
+            )
             return
         for entity_id in models.EntityHandler.track_access:
             if entity_id not in cls.automation_bindings:
