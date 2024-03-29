@@ -106,21 +106,22 @@ class State:
 
     def __init__(self, state_value=None, last_changed=None, last_updated=None, **attributes):
         self.old = self
-        self.state_value = None
-        self.last_changed = None
-        self.last_updated = None
-        state_value = state_value if state_value else attributes.get('state')
-        last_changed = last_changed if last_changed else attributes.get('last_changed')
-        last_updated = last_updated if last_updated else attributes.get('last_updated')
-        self.set_state(state_value, last_changed, last_updated, **attributes)
-
-    def set_state(self, state_value, last_changed, last_updated, **attributes):
         self.state_value = helpers.parse_string_value(state_value)
         self.last_changed = helpers.parse_date(last_changed)
         self.last_updated = helpers.parse_date(last_updated)
+        self.set_attributes(**attributes)
+
+    def set_attributes(self, **attributes):
         for key, value in attributes.items():
             pythonized = helpers.Pythonize.parameter_name(key)
             setattr(self, pythonized, value)
+
+    def set_state(self, state_value, last_changed, last_updated, **attributes):
+        self.old = State(**self.__dict__)
+        self.state_value = helpers.parse_string_value(state_value)
+        self.last_changed = helpers.parse_date(last_changed)
+        self.last_updated = helpers.parse_date(last_updated)
+        self.set_attributes(**attributes)
 
     def set_from_state_event(self, event_data):
         new_state = event_data.get('new_state')

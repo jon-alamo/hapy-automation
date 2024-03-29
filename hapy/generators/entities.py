@@ -15,7 +15,6 @@ my_ha_instance = models.HAInstance()
 entity_ref_tmpl = """
 class {class_name}(models.Entity):
 
-    @dataclasses.dataclass
     class _StateClass(models.State):
         \"\"\"State class for entity {entity_id}\"\"\"
 {dataclass_fields}
