@@ -20,7 +20,7 @@ class OnPressButton(hapy.Automation):
 class OnLivingLightOn(hapy.Automation):
 
     def init_condition(self):
-        return entities.LightLivingDownLight01.state.brightness_pct > 75
+        return entities.LightLivingDownLight01.state.brightness > 75
 
 
     def action(self):

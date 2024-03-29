@@ -14,4 +14,3 @@ class TestPythonizer(unittest.TestCase):
         func_name = 'has_new_\€€|@##|¢∞#¢@∞∞¢¬¢@¢@®¢#®€æƒ¥†™®¥'
         pythonized = helpers.Pythonize.method_name(func_name)
         self.assertTrue(pythonized.isidentifier())
-º

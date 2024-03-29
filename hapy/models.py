@@ -57,6 +57,19 @@ class Domain(metaclass=DomainFactory):
 class EntityHandler(type):
     entities = {}
     homeassistant = HAInstance()
+    track_access = dict()
+
+    @classmethod
+    def reset_access(cls):
+        cls.track_access = dict()
+
+    def __getattribute__(cls, name):
+        try:
+            ent_id = type.__getattribute__(cls, 'entity_id')
+            type.__getattribute__(cls, 'track_access')[ent_id] = cls
+        except AttributeError:
+            pass
+        return type.__getattribute__(cls, name)
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
@@ -156,6 +169,19 @@ class State:
 class DeviceHandler(type):
     devices = {}
     fired_actions = []
+    track_access = dict()
+
+    @classmethod
+    def reset_access(cls):
+        cls.track_access = dict()
+
+    def __getattribute__(cls, name):
+        try:
+            device_id = type.__getattribute__(cls, 'device_id')
+            type.__getattribute__(cls, 'track_access')[device_id] = cls
+        except AttributeError:
+            pass
+        return type.__getattribute__(cls, name)
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)

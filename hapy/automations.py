@@ -30,39 +30,23 @@ class AutomationHandler(type):
             )
 
     @classmethod
-    def is_found_object(cls, obj):
-        for base_class in base_classes:
-            try:
-                if issubclass(obj, base_class):
-                    return True
-            except TypeError:
-                pass
-        return False
-
-    @classmethod
-    def find_trigger_items(cls, function, contexts: list):
-        for name in function.__code__.co_names:
-            for context in list(contexts):
-                if hasattr(context, name):
-                    obj = getattr(context, name)
-                    if type(obj) is types.FunctionType:
-                        yield from cls.find_trigger_items(obj, contexts)
-                    elif type(obj) is types.ModuleType or type(obj) == type:
-                        contexts.append(obj)
-                    elif cls.is_found_object(obj):
-                        yield obj
-                        break
-
-    @classmethod
     def make_bindings(cls, new_class):
-        contexts = [sys.modules[new_class.__module__]]
-        for obj in cls.find_trigger_items(new_class.init_condition, contexts):
-            if obj.id not in cls.automation_bindings:
-                cls.automation_bindings[obj.id] = []
-            cls.automation_bindings[obj.id].append(new_class)
+        new_class().init_condition()
+        for entity_id in models.EntityHandler.track_access:
+            if entity_id not in cls.automation_bindings:
+                cls.automation_bindings[entity_id] = []
+            cls.automation_bindings[entity_id].append(new_class)
             logger.info(
-                f'make_bindings: {new_class.__name__} bound to {obj.id}.'
+                f'make_bindings: {new_class.__name__} bound to {entity_id}.'
             )
+        for device_id in models.DeviceHandler.track_access:
+            if device_id not in cls.automation_bindings:
+                cls.automation_bindings[device_id] = []
+            cls.automation_bindings[device_id].append(new_class)
+            logger.info(
+                f'make_bindings: {new_class.__name__} bound to {device_id}.'
+            )
+        models.EntityHandler.reset_access()
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
