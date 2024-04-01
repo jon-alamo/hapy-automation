@@ -14,6 +14,7 @@ import hapy.events as events
 import hapy.automations as automations
 import hapy.models as models
 import hapy.helpers as helpers
+from hapy.config import settings
 
 
 logger = logging.getLogger('Application')
@@ -112,6 +113,8 @@ class Application(websocket.WebSocketApp):
                 self.recursively_import_modules(mod, imported)
 
     def reload(self):
+        if not settings.auto_reload:
+            return
         if time.time() - self._reload_timer < self._reload_wait:
             return
         automations.AutomationHandler.reset_automations()

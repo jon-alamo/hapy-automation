@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ha_token: str
     timezone: str = 'CET'
     log_level: str = 'INFO'
+    auto_reload: bool = False
 
     class Config:
         env_file = '.env'
