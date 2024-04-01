@@ -47,6 +47,8 @@ class FileChangeHandler(FileSystemEventHandler):
         self.callback = callback
 
     def on_any_event(self, event):
+        if not settings.auto_reload:
+            return
         if event.is_directory:
             return
         filename = os.path.basename(event.src_path)
@@ -113,8 +115,6 @@ class Application(websocket.WebSocketApp):
                 self.recursively_import_modules(mod, imported)
 
     def reload(self):
-        if not settings.auto_reload:
-            return
         if time.time() - self._reload_timer < self._reload_wait:
             return
         automations.AutomationHandler.reset_automations()
