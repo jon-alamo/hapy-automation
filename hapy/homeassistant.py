@@ -181,3 +181,7 @@ class HAInstance:
     def get_device(self, device_id):
         url = f'{self._ha_api_url}/{api_ref["devices"].format(device_id=device_id)}'
         return self._api_request(url)
+
+    def set_state(self, entity_id, data):
+        url = f'{self._ha_api_url}/{api_ref["state"].format(entity_id=entity_id)}'
+        return self._api_request(url, method='post', data=data)
