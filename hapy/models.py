@@ -146,8 +146,8 @@ class State:
         )
 
     def changed(self, old_value=None, new_value=None, offset=60):
-        old_value = old_value or self.old.state_value
-        new_value = new_value or self.state_value
+        old_value = old_value if old_value is not None else self.old.state_value
+        new_value = new_value if new_value is not None else self.state_value
 
         return (
             old_value == self.old.state_value
@@ -157,8 +157,8 @@ class State:
         )
 
     def updated(self, attribute, old_value=None, new_value=None, seconds=5):
-        old_value = old_value or getattr(self.old, attribute)
-        new_value = new_value or getattr(self, attribute)
+        old_value = old_value if old_value is not None else getattr(self.old, attribute)
+        new_value = new_value if old_value is not None else getattr(self, attribute)
         return (
             old_value == getattr(self.old, attribute)
             and new_value == getattr(self, attribute)
