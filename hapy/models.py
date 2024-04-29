@@ -158,7 +158,7 @@ class State:
 
     def updated(self, attribute, old_value=None, new_value=None, seconds=5):
         old_value = old_value if old_value is not None else getattr(self.old, attribute)
-        new_value = new_value if old_value is not None else getattr(self, attribute)
+        new_value = new_value if new_value is not None else getattr(self, attribute)
         return (
             old_value == getattr(self.old, attribute)
             and new_value == getattr(self, attribute)
