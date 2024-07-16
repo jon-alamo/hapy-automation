@@ -95,15 +95,18 @@ class Application(websocket.WebSocketApp):
         self.send(events.send_auth_message(self.ha_token))
         self.send(events.subscribe_to_state_changes())
         self.send(events.subscribe_to_zha_events())
+        sys.stdout.flush()
 
     def on_message(self, ws, message):
         events.handle_message(json.loads(message))
         automations.AutomationHandler.handle_exit_conditions()
         automations.AutomationHandler.run_automations()
         models.DeviceHandler.reset_fired_actions()
+        sys.stdout.flush()
 
     def on_error(self, ws, error):
         logger.error(error)
+        sys.stdout.flush()
 
     def recursively_import_modules(self, module, imported=None):
         if 'hapy' not in module.__name__:
@@ -127,6 +130,7 @@ class Application(websocket.WebSocketApp):
             aut=current_automations,
             dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
         ))
+        sys.stdout.flush()
         self._reload_timer = time.time()
 
     def run_forever(self, *args, **kwargs):
@@ -136,6 +140,7 @@ class Application(websocket.WebSocketApp):
             dev=len(models.DeviceHandler.devices),
             ent=len(models.EntityHandler.entities)
         ))
+        sys.stdout.flush()
         models.EntityHandler.read_states()
         if 'wss' in self.ha_ws_url:
             kwargs['sslopt'] = {"cert_reqs": ssl.CERT_NONE}
