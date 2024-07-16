@@ -2,9 +2,10 @@ import json
 import logging
 import hapy.models as models
 import hapy.automations as automations
+import hapy.helpers as helpers
 
 
-logger = logging.getLogger('EventHandler')
+logger = helpers.get_logger('EventHandler')
 
 
 def send(ws, data):

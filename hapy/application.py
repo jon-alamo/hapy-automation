@@ -6,6 +6,7 @@ import types
 import time
 import ssl
 import os
+import sys
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -17,7 +18,8 @@ import hapy.helpers as helpers
 from hapy.config import settings
 
 
-logger = logging.getLogger('Application')
+# Logs handler
+logger = helpers.get_logger('Application')
 
 
 init_message = """

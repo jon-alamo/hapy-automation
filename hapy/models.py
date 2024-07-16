@@ -6,7 +6,7 @@ import hapy.helpers as helpers
 from hapy.config import settings
 
 
-logger = logging.getLogger('models')
+logger = helpers.get_logger('models')
 
 
 def has_new_state(state):

@@ -3,8 +3,10 @@ import logging
 import websocket
 import requests
 import ssl
+import hapy.helpers as helpers
 
-logger = logging.getLogger('homeassistant')
+
+logger = helpers.get_logger('homeassistant')
 
 
 ws_ref = {

@@ -1,12 +1,13 @@
 import logging
 import hapy
+import hapy.helpers as helpers
 
 # Uncomment to use entities and devices in the automations
 # import entities
 # import devices
 
 
-logger = logging.getLogger('automations')
+logger = helpers.get_logger('automations')
 
 
 class MyAutomation(hapy.Automation):

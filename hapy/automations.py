@@ -4,8 +4,11 @@ import threading
 import sys
 import types
 import hapy.models as models
+import hapy.helpers as helpers
 
-logger = logging.getLogger('hapy.automations')
+
+logger = helpers.get_logger('hapy.automations')
+
 
 register_modules = ['entities', 'devices']
 

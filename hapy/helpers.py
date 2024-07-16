@@ -1,5 +1,7 @@
 import re
 import pytz
+import sys
+import logging
 from hapy.config import settings
 from datetime import datetime, timezone
 import dateutil.parser as dt_parser
@@ -7,6 +9,14 @@ import dateutil.parser as dt_parser
 
 tzname = settings.timezone
 tz = pytz.timezone(tzname)
+
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler(sys.stdout)
+    # Add the handler to the logger
+    logger.addHandler(handler)
+    return logger
 
 
 def get_now():
