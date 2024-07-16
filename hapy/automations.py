@@ -57,6 +57,7 @@ class AutomationHandler(type):
                 f'make_bindings: {new_class.__name__} bound to {device_id}.'
             )
         models.EntityHandler.reset_access()
+        models.DeviceHandler.reset_access()
 
     def __new__(cls, classname, bases, class_dict):
         new_class = type.__new__(cls, classname, bases, class_dict)
