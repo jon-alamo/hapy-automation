@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import logging
 
 
@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = '.env'
+        extra = 'ignore'
 
 
 settings = Settings()

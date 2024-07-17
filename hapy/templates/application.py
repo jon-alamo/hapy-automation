@@ -3,7 +3,8 @@ from hapy.config import settings
 
 
 if __name__ == '__main__':
-    import automations, devices, entities
+    import automations
+
     ha_api_url = settings.ha_api_url
     ha_ws_url = settings.ha_ws_url
     ha_token = settings.ha_token

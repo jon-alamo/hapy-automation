@@ -33,10 +33,13 @@ def get_entities_references(register, device_id, indent_level=2):
 def get_action_references(quirk_module, quirk_name, indent_level=1):
     quirk_module = importlib.import_module(quirk_module)
     quirk = getattr(quirk_module, quirk_name)
-    for action_type, action_name in quirk.device_automation_triggers:
-        action = helpers.get_action_name(action_type, action_name)
-        indent = indent_level * helpers.INDENT
-        yield f'{" " * indent}{action} = False'
+    indent = indent_level * helpers.INDENT
+    if hasattr(quirk, 'device_automation_triggers'):
+        for action_type, action_name in quirk.device_automation_triggers:
+            action = helpers.get_action_name(action_type, action_name)
+            yield f'{" " * indent}{action} = False'
+    else:
+        yield f'{" " * indent}no_action = False'
 
 
 def generate_device_class(register, device_id, device_data):
