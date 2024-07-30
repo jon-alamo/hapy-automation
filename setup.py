@@ -7,7 +7,8 @@ install_requires = [
     'zha-quirks',
     'pydantic-settings',
     'pytz',
-    'python-dateutil'
+    'python-dateutil',
+    'gitpython'
 ]
 
 
@@ -29,7 +30,8 @@ setuptools.setup(
     install_requires=install_requires,
     entry_points={
         'console_scripts': [
-            'hapy-start = hapy.commands:start_project',
+            'hapy-init = hapy.commands:start_project',
+            'hapy-run = hapy.commands:run_application'
         ],
     },
 )

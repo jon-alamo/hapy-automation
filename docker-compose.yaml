@@ -1,0 +1,19 @@
+
+
+services:
+  hapy:
+    build: .
+    container_name: hapy
+    restart: always
+    env_file: .env
+    environment:
+      - HA_API_URL=$HA_API_URL
+      - HA_WS_URL=$HA_WS_URL
+      - HA_TOKEN=$HA_TOKEN
+      - LOG_LEVEL=$LOG_LEVEL
+      - TIMEZONE=$TIMEZONE
+      - AUTO_RELOAD=$AUTO_RELOAD
+      - REPOSITORY_URL=$REPOSITORY_URL
+    volumes:
+      - ./user/.ssh:/root/.ssh
+      - ./user/hapy:/user

@@ -4,6 +4,7 @@ from hapy.config import settings
 
 if __name__ == '__main__':
     import automations
+    hapy.init_project()
 
     ha_api_url = settings.ha_api_url
     ha_ws_url = settings.ha_ws_url

@@ -3,8 +3,8 @@ import argparse
 import inspect
 import dotenv
 import hapy
-import hapy.templates.application as app_template
-import hapy.templates.automations as automations_template
+# import hapy.templates.application as app_template
+# import hapy.templates.automations as automations_template
 import hapy.config as config
 
 dotenv.load_dotenv()
@@ -58,16 +58,23 @@ def create_update_project(directory):
         raise ValueError('HA_TOKEN needs to be defined in .env file.')
     ensure_directory(directory)
     generate_side_files(directory)
-    app_tmpl_source = inspect.getsource(app_template)
+
+    app_tmp_path = os.path.join(os.path.dirname(__file__), 'templates', 'application.py')
+    with open(app_tmp_path, 'r') as f:
+        app_tmpl_source = f.read()
+    # app_tmpl_source = inspect.getsource(app_template)
     create_application_template(directory, app_tmpl_source)
-    auto_tmpl_source = inspect.getsource(automations_template)
+    auto_tmp_path = os.path.join(os.path.dirname(__file__), 'templates', 'automations.py')
+    with open(auto_tmp_path, 'r') as f:
+        auto_tmpl_source = f.read()
+    # auto_tmpl_source = inspect.getsource(automations_template)
     create_automations_template(directory, auto_tmpl_source)
     hapy.generate_modules(directory, ha_api_url, ha_ws_url, ha_token)
 
 
-def start_project():
+def init_project():
     parser = argparse.ArgumentParser(
-        description='Start a new Home Assistant project.'
+        description='Init a new Home Assistant project.'
     )
     parser.add_argument(
         '--directory',
@@ -77,3 +84,21 @@ def start_project():
     )
     args = parser.parse_args()
     create_update_project(args.directory)
+
+
+def run_application():
+    hapy.init_project()
+    ha_api_url = config.settings.ha_api_url
+    ha_ws_url = config.settings.ha_ws_url
+    ha_token = config.settings.ha_token
+    registry = hapy.get_registry()
+
+    import automations
+    app = hapy.Application(
+        automations_module=automations,
+        ha_api_url=ha_api_url,
+        ha_ws_url=ha_ws_url,
+        ha_token=ha_token,
+        registry=registry
+    )
+    app.run_forever()

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     timezone: str = 'CET'
     log_level: str = 'INFO'
     auto_reload: bool = False
+    repository_url: str = ''
 
     class Config:
         env_file = '.env'

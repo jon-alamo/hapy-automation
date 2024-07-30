@@ -6,3 +6,4 @@ watchdog
 pydantic-settings
 pytz
 python-dateutil
+GitPython

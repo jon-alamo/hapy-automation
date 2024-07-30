@@ -1,10 +1,37 @@
 import os
 import json
+import subprocess
+
 import hapy.register as register
 import hapy.generators as generators
 import hapy.homeassistant as homeassistant
-from hapy.automations import Automation
-from hapy.application import Application
+import hapy.commands as commands
+import hapy.git_sync as git_sync
+
+
+LOCAL_PATH = '.'
+
+
+def is_project():
+    dir_files = os.listdir(LOCAL_PATH)
+    if (
+            'application.py' not in dir_files
+            and 'automations' not in dir_files
+            and 'automations.py' not in dir_files
+
+    ):
+        return False
+    return True
+
+
+def init_project():
+    git_sync.setup_ssh()
+    git_sync.pull_repo()
+    if not is_project():
+        commands.create_update_project(LOCAL_PATH)
+        git_sync.push_repo()
+    req_file = os.path.join(LOCAL_PATH, 'requirements.txt')
+    install_requirements(req_file)
 
 
 def generate_modules(directory, ha_api_url, ha_ws_url, ha_token):
@@ -24,6 +51,11 @@ def generate_modules(directory, ha_api_url, ha_ws_url, ha_token):
         devices_route='devices'
     )
     generators.devices.write_devices_module(reg_data, devices_module_path)
+
+
+def install_requirements(req_file):
+    if os.path.exists(req_file):
+        subprocess.check_call(['pip', 'install', '-r', req_file])
 
 
 def get_registry(directory='.'):
