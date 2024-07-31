@@ -5,7 +5,6 @@ import types
 import time
 import ssl
 import os
-import sys
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -14,12 +13,14 @@ import hapy.events as events
 import hapy.automations as automations
 import hapy.models as models
 import hapy.helpers as helpers
+import hapy.git_sync as git_sync
 from hapy.config import settings
 
 
 # Logs handler
 logger = helpers.get_logger('Application')
 
+GIT_POLLING = 60 * 3
 
 init_message = """
 ::::::::: hapy automations running :::::::::::
@@ -82,6 +83,20 @@ class Application(websocket.WebSocketApp):
             on_message=self.on_message,
             on_error=self.on_error,
         )
+        self._git_sync_proc = None
+        self._last_git_sync = None
+
+    def git_sync(self):
+        if self._git_sync_proc is not None and self._git_sync_proc.is_alive():
+            return
+        if (
+                self._last_git_sync is not None
+                and time.time() - self._last_git_sync < GIT_POLLING
+        ):
+            return
+        logger.info("Checking git repository synchronization ...")
+        self._git_sync_proc = git_sync.async_git_pull()
+        self._last_git_sync = time.time()
 
     def get_id(self):
         self._id += 1
@@ -96,18 +111,16 @@ class Application(websocket.WebSocketApp):
         self.send(events.send_auth_message(self.ha_token))
         self.send(events.subscribe_to_state_changes())
         self.send(events.subscribe_to_zha_events())
-        sys.stdout.flush()
 
     def on_message(self, ws, message):
         events.handle_message(json.loads(message))
         automations.AutomationHandler.handle_exit_conditions()
         automations.AutomationHandler.run_automations()
         models.DeviceHandler.reset_fired_actions()
-        sys.stdout.flush()
+        self.git_sync()
 
     def on_error(self, ws, error):
         logger.error(error)
-        sys.stdout.flush()
 
     def recursively_import_modules(self, module, imported=None):
         if 'hapy' not in module.__name__:
@@ -127,21 +140,19 @@ class Application(websocket.WebSocketApp):
         self.recursively_import_modules(self.automations_module)
         current_automations = len(automations.AutomationHandler.automations)
         models.EntityHandler.read_states()
-        print(reload_message.format(
+        logger.info(reload_message.format(
             aut=current_automations,
             dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
         ))
-        sys.stdout.flush()
         self._reload_timer = time.time()
 
     def run_forever(self, *args, **kwargs):
-        print(init_message.format(
+        logger.info(init_message.format(
             ha_url=self.ha_api_url.split('/api')[0],
             aut=len(automations.AutomationHandler.automations),
             dev=len(models.DeviceHandler.devices),
             ent=len(models.EntityHandler.entities)
         ))
-        sys.stdout.flush()
         models.EntityHandler.read_states()
         if 'wss' in self.ha_ws_url:
             kwargs['sslopt'] = {"cert_reqs": ssl.CERT_NONE}

@@ -1,7 +1,7 @@
 import os
-import time
 import shutil
 import subprocess
+import multiprocessing
 
 import git
 import hapy.helpers as helpers
@@ -142,3 +142,8 @@ def pull_repo():
 
     return True
 
+
+def async_git_pull():
+    process = multiprocessing.Process(target=pull_repo)
+    process.start()
+    return process
