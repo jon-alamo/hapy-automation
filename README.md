@@ -1,8 +1,8 @@
 # hapy-automation
 
-### Homeassistant Python Automation Tool.
+### Home Assistant Python Automation Tool
 
-Simple automation flow for Home Assistant using Python.
+Automation flow execution for Home Assistant using Python.
 It comes with a self-discovery feature that generates Python modules where 
 entities, devices and services are type-hinted and bound statically, so the 
 IDE can provide auto-completion and type checking when creating automations 
@@ -31,16 +31,16 @@ TIMEZONE=Europe/Madrid
 Then, create the project structure and self-discovering feature by running the 
 following command from the directory where the .env file is located:
 ```bash
-hapy-start
+hapy-init
 ```
 
-To create a project in different directory, use:
-```bash
-hapy-start --directory path/to/new/project
+### Running automations
+```
+hapy-run
 ```
 
 ### Automations
-By default, the `hapy-start` command creates an `automations.py` file in the 
+By default, the `hapy-init` command creates an `automations.py` file in the 
 project root. For readability and maintainability, automations can be created 
 in separate files as long as they are referenced under the `automations` 
 namespace imported when the project is started. So for instance, 
@@ -103,7 +103,7 @@ reloaded automatically when detected.
 ### Updating entities and devices
 
 Tu update entities and devices in an existing project, just execute the 
-`hapy-start` command from the project root. This will execute the self-discovery
+`hapy-update` command from the project root. This will execute the self-discovery
 feature and update the entities and devices modules with the new entities and
 devices found in the Home Assistant instance. At this point, entities that 
 changed their entity_id in Home Assistant will disappear from the entities.py 
