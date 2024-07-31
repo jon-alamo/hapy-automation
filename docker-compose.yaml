@@ -12,8 +12,7 @@ services:
       - HA_TOKEN=$HA_TOKEN
       - LOG_LEVEL=$LOG_LEVEL
       - TIMEZONE=$TIMEZONE
-      - AUTO_RELOAD=$AUTO_RELOAD
       - REPOSITORY_URL=$REPOSITORY_URL
     volumes:
       - ./user/.ssh:/root/.ssh
-      - ./user/hapy:/user
+      - ./user/hapy:/hapy/user

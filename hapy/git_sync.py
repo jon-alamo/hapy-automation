@@ -14,6 +14,18 @@ LOCAL_PATH = '.'
 REPOSITORY = config.settings.repository_url
 
 
+def print_ssh_key(key):
+    logger.warning(
+        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        f"\n:::: Add this public key to your GitHub repository's keys:  ::::::"
+        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        f"\n\n{key}\n\n"
+        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+    )
+
+
 def setup_ssh():
     ssh_dir = os.path.expanduser("~/.ssh")
     key_name = "hapy-addon-key"
@@ -26,23 +38,50 @@ def setup_ssh():
             "ssh-keygen", "-t", "rsa", "-b", "4096", "-f", id_rsa_path,
             "-N", ""
         ])
+    os.chmod(id_rsa_path, 0o600)
+    setup_ssh_config()
 
-    subprocess.run(["ssh-agent", "-s"])  # Start the ssh-agent
-    # subprocess.run(['eval', '"$(ssh-agent -s)"'])
-    time.sleep(3)
-    subprocess.run(["ssh-add", id_rsa_path])
+    ssh_agent_output = subprocess.check_output("ssh-agent -s", shell=True, text=True)
+    # Parse the SSH agent output to set the environment variables
+    for line in ssh_agent_output.splitlines():
+        if line.startswith("SSH_AUTH_SOCK"):
+            ssh_auth_sock = line.split(";")[0].split("=")[1]
+            os.environ["SSH_AUTH_SOCK"] = ssh_auth_sock
+        elif line.startswith("SSH_AGENT_PID"):
+            ssh_agent_pid = line.split(";")[0].split("=")[1]
+            os.environ["SSH_AGENT_PID"] = ssh_agent_pid
+
+    subprocess.run(["ssh-add", id_rsa_path], check=True, text=True)
 
     with open(id_rsa_pub_path, "r") as pub_key_file:
         pub_key = pub_key_file.read()
-    logger.warning(
-        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        f"\n:::: Add this public key to your GitHub repository's keys:  ::::::"
-        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        f"\n\n{pub_key}\n\n"
-        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-    )
+        print_ssh_key(pub_key)
+
+
+def setup_ssh_config():
+    ssh_config = os.path.expanduser("~/.ssh/config")
+    config_lines = [
+        "Host github.com",
+        "    StrictHostKeyChecking no",
+        "    UserKnownHostsFile=/dev/null"
+    ]
+
+    # Ensure the .ssh directory exists
+    os.makedirs(os.path.dirname(ssh_config), exist_ok=True)
+
+    # Read existing config if it exists
+    if os.path.exists(ssh_config):
+        with open(ssh_config, "r") as config_file:
+            existing_config = config_file.read()
+    else:
+        existing_config = ""
+
+    # Check if the necessary config is already present
+    if not all(line in existing_config for line in config_lines):
+        with open(ssh_config, "a") as config_file:
+            config_file.write("\n")
+            config_file.write("\n".join(config_lines))
+            config_file.write("\n")
 
 
 def push_repo():

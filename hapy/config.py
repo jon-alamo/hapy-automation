@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ha_token: str
     timezone: str = 'CET'
     log_level: str = 'INFO'
-    auto_reload: bool = False
+    auto_reload: bool = True
     repository_url: str = ''
 
     class Config:

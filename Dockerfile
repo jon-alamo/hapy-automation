@@ -14,6 +14,6 @@ WORKDIR /hapy/src
 COPY . .
 RUN pip install --no-cache-dir .
 
-WORKDIR /app
+WORKDIR /hapy/user
 
 CMD ["hapy-run"]

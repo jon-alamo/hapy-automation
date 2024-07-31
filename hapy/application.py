@@ -49,8 +49,10 @@ class FileChangeHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
         if not settings.auto_reload:
+            logger.info('File changed. Not reloading active. Skipping refresh.')
             return
         if event.is_directory:
+            logger.info('Directory changed. Not reloading active. Skipping refresh.')
             return
         filename = os.path.basename(event.src_path)
         if filename.endswith(".py"):

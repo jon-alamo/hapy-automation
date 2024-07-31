@@ -1,5 +1,4 @@
 import json
-import logging
 import websocket
 import requests
 import ssl

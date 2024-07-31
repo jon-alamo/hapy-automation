@@ -1,11 +1,13 @@
 import os
 import argparse
-import inspect
+import sys
+
 import dotenv
+
 import hapy
-# import hapy.templates.application as app_template
-# import hapy.templates.automations as automations_template
 import hapy.config as config
+import hapy.helpers as helpers
+
 
 dotenv.load_dotenv()
 
@@ -86,13 +88,19 @@ def init_project():
     create_update_project(args.directory)
 
 
+def ensure_cwd_in_path():
+    current_working_directory = os.getcwd()
+    if current_working_directory not in sys.path:
+        sys.path.insert(0, current_working_directory)
+
+
 def run_application():
     hapy.init_project()
     ha_api_url = config.settings.ha_api_url
     ha_ws_url = config.settings.ha_ws_url
     ha_token = config.settings.ha_token
     registry = hapy.get_registry()
-
+    ensure_cwd_in_path()
     import automations
     app = hapy.Application(
         automations_module=automations,
