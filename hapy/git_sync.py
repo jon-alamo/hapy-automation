@@ -123,10 +123,28 @@ def remove_content():
             shutil.rmtree(item_path)
 
 
+def add_safe_directory(directory):
+    try:
+        abs_dir = os.path.abspath(directory)
+        # Initialize the Git object
+        git_cmd = git.Git()
+
+        # Execute the git config command to add a safe directory
+        git_cmd.execute(
+            ['git', 'config', '--global', '--add', 'safe.directory', abs_dir]
+        )
+        print(f"Successfully added {abs_dir} as a safe directory.")
+    except git.exc.GitCommandError as e:
+        print(f"An error occurred while adding the safe directory: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
 def pull_repo():
     if not REPOSITORY:
         return False
     try:
+        add_safe_directory(LOCAL_PATH)
         repo = git.Repo(LOCAL_PATH)
         origin = repo.remotes.origin
         origin.pull()
