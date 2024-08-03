@@ -11,7 +11,9 @@ RUN mkdir /hapy/user
 RUN mkdir /hapy/src
 
 WORKDIR /hapy/src
-COPY . .
+COPY hapy hapy
+COPY requirements.txt requirements.txt
+COPY setup.py setup.py
 RUN pip install --no-cache-dir .
 
 WORKDIR /hapy/user
