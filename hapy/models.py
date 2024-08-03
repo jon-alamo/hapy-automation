@@ -205,10 +205,12 @@ class DeviceHandler(type):
 class Device(metaclass=DeviceHandler):
     device_id = None
     quirk = None
+    quirk_attribute = None
 
     @classmethod
     def handle_action_data(cls, data):
-        for action_names, action_data in cls.quirk.device_automation_triggers_metadata.items():
+        device_automation_triggers = getattr(cls.quirk, cls.quirk.quirk_attribute)
+        for action_names, action_data in device_automation_triggers.items():
             action = helpers.get_action_name(*action_names)
             for key, value in action_data.items():
                 if type(value) is dict:

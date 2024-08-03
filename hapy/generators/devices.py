@@ -7,9 +7,8 @@ import importlib
 
 # Load all quirks
 zhaquirks.setup(zhaquirks.__path__[0])
-registries = [
-    quirks._DEVICE_REGISTRY._registry, quirks._DEVICE_REGISTRY._registry_v2
-]
+registry_v1 = quirks._DEVICE_REGISTRY._registry
+registry_v2 = quirks._DEVICE_REGISTRY._registry_v2
 
 
 module_tmpl = """
@@ -21,6 +20,7 @@ import entities as my_entities
 device_tmpl = '''
 class {class_name}(models.Device):
     {import_qrk}
+    {quirk_attribute}
     device_id = "{device_id}"
     unique_id = "{unique_id}"
     
@@ -33,11 +33,16 @@ class {class_name}(models.Device):
 
 
 def get_device_quirk(manufacturer, model):
-    device_key = manufacturer, model
-    for registry in registries:
-        if device_key in registry:
-            return registry[device_key][0]
-    return None
+    if manufacturer in registry_v1:
+        if model in registry_v1[manufacturer]:
+            quirk = registry_v1[manufacturer][model][0]
+            attribute = 'device_automation_triggers'
+            return quirk, attribute
+    if (manufacturer, model) in registry_v2:
+        quirk = registry_v2[(manufacturer, model)][0]
+        attribute = 'device_automation_triggers_metadata'
+        return quirk, attribute
+    return None, None
 
 
 def get_entities_references(register, device_id, indent_level=2):
@@ -53,10 +58,10 @@ def get_entities_references(register, device_id, indent_level=2):
                     yield f'{" " * indent}{entity_name} = my_entities.{entity_ref}'
 
 
-def get_action_references(quirk, indent_level=1):
+def get_action_references(quirk, quirk_attribute, indent_level=1):
     indent = indent_level * helpers.INDENT
-    if hasattr(quirk, 'device_automation_triggers_metadata'):
-        for action_type, action_name in quirk.device_automation_triggers_metadata:
+    if hasattr(quirk, quirk_attribute):
+        for action_type, action_name in getattr(quirk, quirk_attribute):
             action = helpers.get_action_name(action_type, action_name)
             yield f'{" " * indent}{action} = False'
     else:
@@ -66,19 +71,22 @@ def get_action_references(quirk, indent_level=1):
 def generate_device_class(register, device_id, device_data):
     class_name = helpers.get_device_class_name(device_data['name'], device_id)
     unique_id = device_data.get('unique_id', None)
-    quirk = get_device_quirk(
+    quirk, quirk_attribute = get_device_quirk(
         device_data['manufacturer'], device_data['model']
     )
     entities_references = '\n'.join(get_entities_references(register, device_id))
-    if quirk:
+    if quirk and device_data['manufacturer']:
         import_qrk = f'quirk = gen_devices.get_device_quirk("{device_data['manufacturer']}", "{device_data['model']}")'
-        action_references = '\n'.join(get_action_references(quirk))
+        quirk_attribute = f'quirk_attribute = "{quirk_attribute}"'
+        action_references = '\n'.join(get_action_references(quirk, quirk_attribute))
     else:
         import_qrk = 'quirk = None'
+        quirk_attribute = 'quirk_attribute = None'
         action_references = ''
     return device_tmpl.format(
         class_name=class_name,
         import_qrk=import_qrk,
+        quirk_attribute=quirk_attribute,
         device_id=device_id,
         unique_id=unique_id,
         action_references=action_references,
