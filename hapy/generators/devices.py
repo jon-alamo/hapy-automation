@@ -19,8 +19,7 @@ import entities as my_entities
 
 device_tmpl = '''
 class {class_name}(models.Device):
-    {import_qrk}
-    {quirk_attribute}
+    {quirk_def_statement}
     device_id = "{device_id}"
     unique_id = "{unique_id}"
     
@@ -76,17 +75,14 @@ def generate_device_class(register, device_id, device_data):
     )
     entities_references = '\n'.join(get_entities_references(register, device_id))
     if quirk and device_data['manufacturer']:
-        quirk_def_statement = f'quirk = gen_devices.get_device_quirk("{device_data['manufacturer']}", "{device_data['model']}")'
-        quirk_attr_statement = f'quirk_attribute = "{quirk_attribute}"'
+        quirk_def_statement = f'quirk, quirk_attribute = gen_devices.get_device_quirk("{device_data['manufacturer']}", "{device_data['model']}")'
         action_references = '\n'.join(get_action_references(quirk, quirk_attribute))
     else:
-        quirk_def_statement = 'quirk = None'
-        quirk_attr_statement = 'quirk_attribute = None'
+        quirk_def_statement = 'quirk, quirk_attribute = None, None'
         action_references = ''
     return device_tmpl.format(
         class_name=class_name,
-        import_qrk=quirk_def_statement,
-        quirk_attribute=quirk_attr_statement,
+        quirk_def_statement=quirk_def_statement,
         device_id=device_id,
         unique_id=unique_id,
         action_references=action_references,

@@ -20,7 +20,7 @@ from hapy.config import settings
 # Logs handler
 logger = helpers.get_logger('Application')
 
-GIT_POLLING = 60 * 3
+GIT_POLLING = 60
 
 init_message = """
 ::::::::: hapy automations running :::::::::::
@@ -50,10 +50,15 @@ class FileChangeHandler(FileSystemEventHandler):
 
     def on_any_event(self, event):
         if not settings.auto_reload:
-            logger.info('File changed. Not reloading active. Skipping refresh.')
+            logger.info(
+                f'Not reloading active (settings.auto_reload = '
+                f'{settings.auto_reload}) Skipping refresh.'
+            )
             return
         if event.is_directory:
-            logger.info('Directory changed. Not reloading active. Skipping refresh.')
+            logger.info(
+                f'Directory changed (event.is_directory = {event.is_directory}'
+                f'). Not reloading active. Skipping refresh.')
             return
         filename = os.path.basename(event.src_path)
         if filename.endswith(".py"):
@@ -88,14 +93,23 @@ class Application(websocket.WebSocketApp):
 
     def git_sync(self):
         if self._git_sync_proc is not None and self._git_sync_proc.is_alive():
+            logger.info(
+                f"Not checking git as self._git_sync_proc.is_alive() returned "
+                f"{self._git_sync_proc.is_alive()}"
+            )
             return
         if (
                 self._last_git_sync is not None
                 and time.time() - self._last_git_sync < GIT_POLLING
         ):
+            logger.info(
+                f"Not checking git as time.time() - self._last_git_sync is :"
+                f"{time.time()} - {self._last_git_sync} = {time.time() - self._last_git_sync}"
+            )
             return
         logger.info("Checking git repository synchronization ...")
         self._git_sync_proc = git_sync.async_git_pull()
+        logger.info("Git repository synchronization launched ...")
         self._last_git_sync = time.time()
 
     def get_id(self):
