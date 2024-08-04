@@ -16,3 +16,4 @@ services:
     volumes:
       - ./user/.ssh:/root/.ssh
       - ./user/hapy:/hapy/user
+    platform: linux/amd64
