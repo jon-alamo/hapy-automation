@@ -1,7 +1,7 @@
 import os
 import shutil
 import subprocess
-import multiprocessing
+import threading
 
 import git
 import hapy.helpers as helpers
@@ -162,6 +162,6 @@ def pull_repo():
 
 
 def async_git_pull():
-    process = multiprocessing.Process(target=pull_repo)
-    process.start()
-    return process
+    thread = threading.Thread(target=pull_repo)
+    thread.start()
+    return thread

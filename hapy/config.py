@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     log_level: str = 'INFO'
     auto_reload: bool = True
     repository_url: str = ''
+    git_polling_minutes: int = 3
 
     class Config:
         env_file = '.env'

@@ -20,7 +20,7 @@ from hapy.config import settings
 # Logs handler
 logger = helpers.get_logger('Application')
 
-GIT_POLLING = 60
+GIT_POLLING = 60 * int(settings.git_polling_minutes) if settings.git_polling_minutes else None
 
 init_message = """
 ::::::::: hapy automations running :::::::::::
@@ -92,6 +92,8 @@ class Application(websocket.WebSocketApp):
         self._last_git_sync = None
 
     def git_sync(self):
+        if not GIT_POLLING:
+            return
         if self._git_sync_proc is not None and self._git_sync_proc.is_alive():
             logger.info(
                 f"Not checking git as self._git_sync_proc.is_alive() returned "
