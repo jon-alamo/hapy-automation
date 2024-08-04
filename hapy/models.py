@@ -209,9 +209,7 @@ class Device(metaclass=DeviceHandler):
 
     @classmethod
     def handle_action_data(cls, data):
-        device_automation_triggers = getattr(
-            cls.quirk, cls.quirk.quirk_attribute
-        )
+        device_automation_triggers = getattr(cls.quirk, cls.quirk_attribute)
         for action_names, action_data in device_automation_triggers.items():
             action = helpers.get_action_name(*action_names)
             for key, value in action_data.items():
