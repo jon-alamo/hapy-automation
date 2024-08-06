@@ -88,7 +88,11 @@ def push_repo():
     if not REPOSITORY:
         return False
     repo = git.Repo(LOCAL_PATH)
-    repo.git.add(A=True)
+    repo.git.add(os.path.join(LOCAL_PATH, 'automations.py'))
+    repo.git.add(os.path.join(LOCAL_PATH, 'entities.py'))
+    repo.git.add(os.path.join(LOCAL_PATH, 'devices.py'))
+    repo.git.add(os.path.join(LOCAL_PATH, 'domains.py'))
+    repo.git.add(os.path.join(LOCAL_PATH, '.registry'))
     repo.index.commit("[AUTO-PUSH] Hapy Automations File Structure")
     origin = repo.remotes.origin
     origin.push()
