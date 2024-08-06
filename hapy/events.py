@@ -47,30 +47,28 @@ def handle_state_change(data):
     if entity:
         automations.AutomationHandler.register_change(entity)
         entity.state.set_from_state_event(data)
-        changes = get_differences(data.get('old_state', {}), data.get('new_state', {}))
-        logger.info(f'handle_state_change: {entity.entity_id}: {changes}')
+        logger.info(f'[EVENT] - state-change: {entity.entity_id}')
 
 
 def handle_zha_event(data):
     device = models.DeviceHandler.devices.get(data['device_id'])
     if device and device.quirk is not None:
-        logger.info(f'handle_zha_event: {data}')
+        logger.info(f'[EVENT] zha-event: {device}')
         automations.AutomationHandler.register_change(device)
         device.handle_action_data(data)
 
 
 def unknown_event(data):
-    logger.info(f'unknown_event: {data}')
+    logger.info(f'[EVENT] unknown_event: {data}')
 
 
 event_handlers = {
     'state_changed': handle_state_change,
     'zha_event': handle_zha_event
 }
-
+"{'type': 'event', 'event': {'event_type': 'state_changed', 'data': {'entity_id': 'binary_sensor.s23_"
 
 def handle_message(message):
-    logger.info(f'handle_message: {str(message)[:100]} ...')
     if message['type'] != 'event':
         return
     event = message['event']

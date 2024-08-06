@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     auto_reload: bool = True
     repository_url: str = ''
     git_polling_minutes: int = 3
+    auto_reset: bool = True
 
     class Config:
         env_file = '.env'

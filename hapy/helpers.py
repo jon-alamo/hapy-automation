@@ -13,9 +13,6 @@ tz = pytz.timezone(tzname)
 
 def get_logger(name):
     logger = logging.getLogger(name)
-    handler = logging.StreamHandler(sys.stdout)
-    # Add the handler to the logger
-    logger.addHandler(handler)
     return logger
 
 

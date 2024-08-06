@@ -1,6 +1,7 @@
 import os
 import argparse
 import sys
+import time
 
 import dotenv
 
@@ -11,6 +12,8 @@ import hapy.helpers as helpers
 
 dotenv.load_dotenv()
 
+
+restart_time = 5
 
 def ensure_directory(directory):
     if not os.path.exists(directory):
@@ -102,11 +105,18 @@ def run_application():
     registry = hapy.get_registry()
     ensure_cwd_in_path()
     import automations
-    app = hapy.Application(
-        automations_module=automations,
-        ha_api_url=ha_api_url,
-        ha_ws_url=ha_ws_url,
-        ha_token=ha_token,
-        registry=registry
-    )
-    app.run_forever()
+    logger = helpers.get_logger('main')
+    while config.settings.auto_reset:
+        try:
+            app = hapy.Application(
+                automations_module=automations,
+                ha_api_url=ha_api_url,
+                ha_ws_url=ha_ws_url,
+                ha_token=ha_token,
+                registry=registry
+            )
+            app.run_forever()
+        except Exception as e:
+            logger.error(str(e))
+            logger.error(f'Restarting in {restart_time} seconds ... ')
+            time.sleep(restart_time)

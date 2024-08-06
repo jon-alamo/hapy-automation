@@ -1,8 +1,6 @@
 import time
 import logging
 import threading
-import sys
-import types
 import hapy.models as models
 import hapy.helpers as helpers
 
@@ -29,7 +27,7 @@ class AutomationHandler(type):
             automations = cls.automation_bindings[item.id]
             cls.to_check_automations.extend(automations)
             logging.info(
-                f'register_change: {item.id} triggering {automations}'
+                f'[AUTOMATIONS] - register_change: {item.id} triggering {automations}'
             )
 
     @classmethod
@@ -47,14 +45,14 @@ class AutomationHandler(type):
                 cls.automation_bindings[entity_id] = []
             cls.automation_bindings[entity_id].append(new_class)
             logger.info(
-                f'make_bindings: {new_class.__name__} bound to {entity_id}.'
+                f'[AUTOMATIONS] - make_bindings: {new_class.__name__} bound to {entity_id}.'
             )
         for device_id in models.DeviceHandler.track_access:
             if device_id not in cls.automation_bindings:
                 cls.automation_bindings[device_id] = []
             cls.automation_bindings[device_id].append(new_class)
             logger.info(
-                f'make_bindings: {new_class.__name__} bound to {device_id}.'
+                f'[AUTOMATIONS] - make_bindings: {new_class.__name__} bound to {device_id}.'
             )
         models.EntityHandler.reset_access()
         models.DeviceHandler.reset_access()
@@ -78,7 +76,7 @@ class AutomationHandler(type):
         for name in list(cls.running_automations.keys()):
             automation = cls.running_automations[name]
             if automation.exit_condition():
-                logger.info(f'handle_exit_conditions: {name} leaving.')
+                logger.info(f'[AUTOMATIONS] - handle_exit_conditions: {name} leaving.')
                 automation.force_exit = True
                 cls.running_automations.pop(name)
 
@@ -88,7 +86,7 @@ class AutomationHandler(type):
             automation.__name__: automation()
             for automation in cls.to_check_automations
         }
-        logger.info(f'run_automations: {len(to_run)} automations to the queue.')
+        logger.info(f'[AUTOMATIONS] - run_automations: {len(to_run)} automations to the queue.')
         cls.running_automations.update(to_run)
         cls.to_check_automations = []
         for automation in to_run.values():
@@ -117,13 +115,12 @@ class Automation(metaclass=AutomationHandler):
 
     def run(self):
         if not self.init_condition():
-            logger.info(f'{self.__class__.__name__}.run: did not meet init '
-                f'condition. Exiting.'
+            logger.info(
+                f'[AUTOMATIONS] - {self.__class__.__name__} did not meet init condition.'
             )
             return
         logger.info(
-            f'{self.__class__.__name__}.run: met init condition. '
-            f'Running action.'
+            f'[AUTOMATIONS] - {self.__class__.__name__} triggered.'
         )
         self.action()
         t0 = time.time()
@@ -134,17 +131,15 @@ class Automation(metaclass=AutomationHandler):
             time.sleep(self.step_time)
             if self.is_time_out(t0):
                 logger.info(
-                    f'{self.__class__.__name__}.run: timed out. Leaving.'
+                    f'[AUTOMATIONS] - {self.__class__.__name__} timed out.'
                 )
                 return
             if self.force_exit:
                 logger.info(
-                    f'{self.__class__.__name__}.run was forced to exit.'
-                    f' Leaving.'
+                    f'[AUTOMATIONS] - {self.__class__.__name__} was forced to exit.'
                 )
                 return
 
         logger.info(
-            f'{self.__class__.__name__}.run: met exit condition after '
-            f'{loops} loops. Leaving.'
+            f'[AUTOMATIONS] - {self.__class__.__name__} met exit condition.'
         )

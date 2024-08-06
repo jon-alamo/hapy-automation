@@ -196,7 +196,7 @@ class DeviceHandler(type):
             device = cls.devices.get(device_id)
             if device:
                 logger.info(
-                    f'reset_fired_actions: {device.__name__}.{action} released'
+                    f'[ACTION] - reset_fired_actions: {device.__name__}.{action} released'
                 )
                 setattr(device, action, False)
         cls.fired_actions = []
@@ -223,7 +223,7 @@ class Device(metaclass=DeviceHandler):
                     setattr(cls, action, True)
                     DeviceHandler.fired_actions.append((cls.device_id, action))
                     logger.info(
-                        f'handle_action_data: '
+                        f'[ACTION] - handle_action_data: '
                         f'{cls.devices[cls.device_id].__name__}.{action} fired'
                     )
 
