@@ -98,16 +98,17 @@ def ensure_cwd_in_path():
 
 
 def run_application():
-    hapy.init_project()
-    ha_api_url = config.settings.ha_api_url
-    ha_ws_url = config.settings.ha_ws_url
-    ha_token = config.settings.ha_token
-    registry = hapy.get_registry()
-    ensure_cwd_in_path()
-    import automations
-    logger = helpers.get_logger('main')
     while config.settings.auto_reset:
+        logger = helpers.get_logger('main')
         try:
+            hapy.init_project()
+            ha_api_url = config.settings.ha_api_url
+            ha_ws_url = config.settings.ha_ws_url
+            ha_token = config.settings.ha_token
+            registry = hapy.get_registry()
+            ensure_cwd_in_path()
+
+            import automations
             app = hapy.Application(
                 automations_module=automations,
                 ha_api_url=ha_api_url,
