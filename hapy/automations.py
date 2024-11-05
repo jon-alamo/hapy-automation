@@ -120,7 +120,7 @@ class Automation(metaclass=AutomationHandler):
             )
             return
         logger.info(
-            f'[AUTOMATIONS] - {self.__class__.__name__} triggered.'
+            f'[AUTOMATIONS] - {self.__class__.__name__} action triggered.'
         )
         self.action()
         t0 = time.time()
