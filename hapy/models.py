@@ -101,6 +101,20 @@ class Entity(metaclass=EntityHandler):
     def id(cls):
         return cls.entity_id
 
+    @classmethod
+    @property
+    def children(cls):
+        if (
+            hasattr(cls, 'state')
+            and hasattr(cls.state, 'entity_id')
+            and isinstance(cls.state.entity_id, list)
+        ):
+            return [
+                cls.__class__.entities.get(eid) for eid in cls.state.entity_id
+                if cls.__class__.entities.get(eid) is not None
+            ]
+        return []
+
 
 class State:
 
