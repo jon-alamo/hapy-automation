@@ -27,7 +27,7 @@ class {class_name}(models.Entity):
     unique_id = "{unique_id}"
     name = "{name}"
     device_id = "{device_id}"
-    state = _StateClass(entity_id=entity_id, ha_instance=my_ha_instance, **{attributes})
+    state = _StateClass(actual_entity_id=entity_id, ha_instance=my_ha_instance, **{attributes})
     services = {domain_ref}(
         instance=my_ha_instance,
         entity_id="{entity_id}",
