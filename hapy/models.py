@@ -118,7 +118,7 @@ class Entity(metaclass=EntityHandler):
 
 class State:
 
-    def __init__(self, entity_id, ha_instance, state_value=None,
+    def __init__(self, entity_id=None, ha_instance=None, state_value=None,
                  last_changed=None, last_updated=None, **attributes):
         self.entity_id = entity_id
         self.ha_instance = ha_instance
@@ -129,7 +129,10 @@ class State:
         self.set_attributes(**attributes)
 
     def __setattr__(self, key, value):
-        self.ha_instance.set_state(entity_id=self.entity_id, data={key: value})
+        if self.ha_instance and self.entity_id:
+            self.ha_instance.set_state(
+                entity_id=self.entity_id, data={key: value}
+            )
         return super().__setattr__(key, value)
 
     def set_attributes(self, **attributes):
