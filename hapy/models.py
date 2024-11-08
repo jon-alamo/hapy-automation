@@ -120,15 +120,16 @@ class State:
 
     def __init__(self, entity_id=None, ha_instance=None, state_value=None,
                  last_changed=None, last_updated=None, **attributes):
-        self.entity_id = entity_id
         self.ha_instance = ha_instance
+        self.entity_id = entity_id
         self.old = self
         self.state_value = helpers.parse_string_value(state_value)
         self.last_changed = helpers.parse_date(last_changed)
         self.last_updated = helpers.parse_date(last_updated)
         self.set_attributes(**attributes)
+        self.__setattr__ = self.__setattr
 
-    def __setattr__(self, key, value):
+    def __setattr(self, key, value):
         if self.ha_instance and self.entity_id:
             self.ha_instance.set_state(
                 entity_id=self.entity_id, data={key: value}
