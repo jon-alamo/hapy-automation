@@ -125,14 +125,6 @@ class Automation(metaclass=AutomationHandler):
         return time.time() - t0 > self.timeout
 
     def run(self):
-        if not self.init_condition():
-            logger.info(
-                f'[AUTOMATIONS] - {self.__class__.__name__} did not meet init condition.'
-            )
-            return
-        logger.info(
-            f'[AUTOMATIONS] - {self.__class__.__name__} action triggered.'
-        )
         self.action()
         t0 = time.time()
         loops = 0
@@ -150,7 +142,7 @@ class Automation(metaclass=AutomationHandler):
                     f'[AUTOMATIONS] - {self.__class__.__name__} was forced to exit.'
                 )
                 return
-
+        times = 'once' if loops == 0 else f'{loops + 1} times'
         logger.info(
-            f'[AUTOMATIONS] - {self.__class__.__name__} met exit condition.'
+            f'[AUTOMATIONS] - {self.__class__.__name__} action triggered {times}.'
         )
