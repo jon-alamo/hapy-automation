@@ -15,20 +15,12 @@ base_classes = [models.Entity, models.Device]
 
 class AutomationHandler(type):
     to_check_automations = []
+    to_run_automations = {}
     running_automations = {}
     automation_bindings = {}
     automations = {}
     modules = {}
     _base_class = None
-
-    @classmethod
-    def register_change(cls, item):
-        if item.id in cls.automation_bindings:
-            automations = cls.automation_bindings[item.id]
-            cls.to_check_automations.extend(automations)
-            logging.info(
-                f'[AUTOMATIONS] - register_change: {item.id} triggering {automations}'
-            )
 
     @classmethod
     def make_bindings(cls, new_class):
@@ -81,17 +73,36 @@ class AutomationHandler(type):
                 cls.running_automations.pop(name)
 
     @classmethod
-    def run_automations(cls):
-        to_run = {
-            automation.__name__: automation()
+    def register_change(cls, item):
+        if item.id in cls.automation_bindings:
+            automations = [
+                automation() for automation in cls.automation_bindings[item.id]
+            ]
+            cls.to_check_automations.extend(automations)
+            logging.info(
+                f'[AUTOMATIONS] - register_change: {item.id} triggering {len(automations)} checks.'
+            )
+
+    @classmethod
+    def check_automations(cls):
+        cls.to_run_automations = {
+            automation.__name__: automation
             for automation in cls.to_check_automations
+            if automation.init_condition()
         }
-        logger.info(f'[AUTOMATIONS] - run_automations: {len(to_run)} automations to the queue.')
-        cls.running_automations.update(to_run)
         cls.to_check_automations = []
-        for automation in to_run.values():
+        logger.info(f'[AUTOMATIONS] - check_automations: {len(cls.to_run_automations)} automations to the queue.')
+
+    @classmethod
+    def run_automations(cls):
+        for name, automation in cls.to_run_automations.items():
+            logger.info(
+                f'[AUTOMATIONS] - run_automations: executing {name} automations.'
+            )
+            cls.running_automations[name] = automation
             thread = threading.Thread(target=automation.run)
             thread.start()
+        cls.to_run_automations = []
 
 
 class Automation(metaclass=AutomationHandler):

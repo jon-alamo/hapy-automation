@@ -116,8 +116,9 @@ class Application(websocket.WebSocketApp):
     def on_message(self, ws, message):
         events.handle_message(json.loads(message))
         automations.AutomationHandler.handle_exit_conditions()
-        automations.AutomationHandler.run_automations()
+        automations.AutomationHandler.check_automations()
         models.DeviceHandler.reset_fired_actions()
+        automations.AutomationHandler.run_automations()
         self.git_sync()
 
     def on_error(self, ws, error):
