@@ -86,7 +86,7 @@ class AutomationHandler(type):
     @classmethod
     def check_automations(cls):
         cls.to_run_automations = {
-            automation.__name__: automation
+            automation.__class__.__name__: automation
             for automation in cls.to_check_automations
             if automation.init_condition()
         }
