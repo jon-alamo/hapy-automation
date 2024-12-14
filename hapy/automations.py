@@ -25,7 +25,7 @@ class AutomationHandler(type):
     @classmethod
     def make_bindings(cls, new_class):
         try:
-            new_class().init_condition()
+            automation_obj = new_class().init_condition()
         except Exception as e:
             logger.warning(
                 f'{new_class.__name__} not bound to any entity or device due to '
@@ -34,15 +34,15 @@ class AutomationHandler(type):
             return
         for entity_id in models.EntityHandler.track_access:
             if entity_id not in cls.automation_bindings:
-                cls.automation_bindings[entity_id] = []
-            cls.automation_bindings[entity_id].append(new_class)
+                cls.automation_bindings[entity_id] = {}
+            cls.automation_bindings[entity_id][new_class.get_id()] = new_class
             logger.info(
                 f'[AUTOMATIONS] - make_bindings: {new_class.__name__} bound to {entity_id}.'
             )
         for device_id in models.DeviceHandler.track_access:
             if device_id not in cls.automation_bindings:
-                cls.automation_bindings[device_id] = []
-            cls.automation_bindings[device_id].append(new_class)
+                cls.automation_bindings[device_id] = {}
+            cls.automation_bindings[device_id][new_class.get_id()] = new_class
             logger.info(
                 f'[AUTOMATIONS] - make_bindings: {new_class.__name__} bound to {device_id}.'
             )
@@ -54,7 +54,7 @@ class AutomationHandler(type):
         if cls._base_class is None and classname == 'Automation':
             cls._base_class = new_class
         else:
-            cls.automations[classname] = new_class
+            cls.automations[new_class.get_id()] = new_class
         cls.make_bindings(new_class)
         return new_class
 
@@ -76,7 +76,7 @@ class AutomationHandler(type):
     def register_change(cls, item):
         if item.id in cls.automation_bindings:
             automations = [
-                automation() for automation in cls.automation_bindings[item.id]
+                automation() for automation in cls.automation_bindings[item.id].values()
             ]
             cls.to_check_automations.extend(automations)
             logging.info(
@@ -146,3 +146,7 @@ class Automation(metaclass=AutomationHandler):
         logger.info(
             f'[AUTOMATIONS] - {self.__class__.__name__} action triggered {times}.'
         )
+
+    @classmethod
+    def get_id(cls):
+        return '.'.join([cls.__module__, cls.__name__])
