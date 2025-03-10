@@ -17,7 +17,7 @@ setuptools.setup(
     version='0.3',
     author="jon-alamo",
     author_email="jonrivala@gmail.com",
-    description="Home Assistant (Pure)Python Automation Tool",
+    description="Home Assistant Python Automation Tool",
     long_description="",
     long_description_content_type="text/markdown",
     url="",
