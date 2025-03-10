@@ -1,9 +1,8 @@
 requests
 websocket-client
-#git+https://github.com/zigpy/zha-device-handlers.git
-zha-quirks
 watchdog
 pydantic-settings
 pytz
 python-dateutil
 GitPython
+zha-quirks==0.0.134
