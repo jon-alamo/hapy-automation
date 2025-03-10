@@ -35,7 +35,7 @@ class TestAutomationsBindings(unittest.TestCase):
         )
         self.assertIn(
             my_aut.OnPressButton,
-            automations.AutomationHandler.automation_bindings[devices.MainSwitch.id]
+            automations.AutomationHandler.automation_bindings[devices.MainSwitch.id].values()
         )
 
     def test_automation_to_run_on_entity_change(self):
@@ -47,7 +47,7 @@ class TestAutomationsBindings(unittest.TestCase):
         events.handle_state_change(data)
         self.assertIn(
             my_aut.OnLivingLightOn,
-            automations.AutomationHandler.to_check_automations
+            [type(c) for c in automations.AutomationHandler.to_check_automations]
         )
 
     def test_automation_name_has_module_and_class(self):

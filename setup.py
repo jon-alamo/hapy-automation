@@ -14,7 +14,7 @@ install_requires = [
 
 setuptools.setup(
     name='hapy',
-    version='0.1',
+    version='0.2',
     author="jon-alamo",
     author_email="jonrivala@gmail.com",
     description="Home Assistant (Pure)Python Automation Tool",

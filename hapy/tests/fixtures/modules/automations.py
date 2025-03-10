@@ -22,7 +22,6 @@ class OnLivingLightOn(hapy.Automation):
     def init_condition(self):
         return entities.LightLivingDownLight01.state.brightness > 75
 
-
     def action(self):
         return entities.LightLivingDownLight.turn_on(brightness_pct=50)
 

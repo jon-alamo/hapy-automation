@@ -7,8 +7,8 @@ import importlib
 
 # Load all quirks
 zhaquirks.setup(zhaquirks.__path__[0])
-registry_v1 = quirks._DEVICE_REGISTRY._registry
-registry_v2 = quirks._DEVICE_REGISTRY._registry_v2
+registry_v1 = quirks._DEVICE_REGISTRY.registry_v1
+registry_v2 = quirks._DEVICE_REGISTRY.registry_v2
 
 
 module_tmpl = """
