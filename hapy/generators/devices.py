@@ -75,7 +75,7 @@ def generate_device_class(register, device_id, device_data):
     )
     entities_references = '\n'.join(get_entities_references(register, device_id))
     if quirk and device_data['manufacturer']:
-        quirk_def_statement = f'quirk, quirk_attribute = gen_devices.get_device_quirk("{device_data['manufacturer']}", "{device_data['model']}")'
+        quirk_def_statement = f"quirk, quirk_attribute = gen_devices.get_device_quirk(\"{device_data['manufacturer']}\", \"{device_data['model']}\")"
         action_references = '\n'.join(get_action_references(quirk, quirk_attribute))
     else:
         quirk_def_statement = 'quirk, quirk_attribute = None, None'
