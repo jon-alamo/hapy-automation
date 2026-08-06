@@ -8,7 +8,9 @@ import importlib
 # Load all quirks
 zhaquirks.setup(zhaquirks.__path__[0])
 registry_v1 = quirks.DEVICE_REGISTRY.registry_v1
-registry_v2 = quirks.DEVICE_REGISTRY.registry_v2
+# registry_v2 was removed from newer zigpy releases; degrade gracefully instead of
+# crashing the whole app at import time if it's gone.
+registry_v2 = getattr(quirks.DEVICE_REGISTRY, 'registry_v2', {})
 
 
 module_tmpl = """

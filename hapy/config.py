@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     repository_url: str = ''
     git_polling_minutes: int = 3
     auto_reset: bool = True
+    status_entity_id: str = 'sensor.hapy_status'
 
     class Config:
         env_file = '.env'

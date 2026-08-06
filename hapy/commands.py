@@ -8,6 +8,8 @@ import dotenv
 import hapy
 import hapy.config as config
 import hapy.helpers as helpers
+import hapy.git_sync as git_sync
+import hapy.status as status
 
 
 dotenv.load_dotenv()
@@ -119,5 +121,7 @@ def run_application():
             app.run_forever()
         except Exception as e:
             logger.error(str(e))
+            rolled_back = git_sync.rollback_to_last_good()
+            status.report('error', stage='startup', error=str(e), rolled_back=rolled_back)
             logger.error(f'Restarting in {restart_time} seconds ... ')
             time.sleep(restart_time)

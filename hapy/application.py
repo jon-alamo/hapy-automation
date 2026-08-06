@@ -14,6 +14,7 @@ import hapy.automations as automations
 import hapy.models as models
 import hapy.helpers as helpers
 import hapy.git_sync as git_sync
+import hapy.status as status
 from hapy.config import settings
 
 
@@ -138,15 +139,31 @@ class Application(websocket.WebSocketApp):
     def reload(self):
         if time.time() - self._reload_timer < self._reload_wait:
             return
-        automations.AutomationHandler.reset_automations()
-        self.recursively_import_modules(self.automations_module)
+        self._reload_timer = time.time()
+        automations_snapshot = dict(automations.AutomationHandler.automations)
+        bindings_snapshot = dict(automations.AutomationHandler.automation_bindings)
+        try:
+            automations.AutomationHandler.reset_automations()
+            self.recursively_import_modules(self.automations_module)
+            models.EntityHandler.read_states()
+        except Exception as e:
+            automations.AutomationHandler.automations = automations_snapshot
+            automations.AutomationHandler.automation_bindings = bindings_snapshot
+            logger.error(
+                f'[RELOAD] - reload failed, keeping previous automations running: {e}'
+            )
+            rolled_back = git_sync.rollback_to_last_good()
+            status.report(
+                'error', stage='reload', error=str(e), rolled_back=rolled_back
+            )
+            return
         current_automations = len(automations.AutomationHandler.automations)
-        models.EntityHandler.read_states()
+        git_sync.save_last_good_commit(git_sync.get_current_commit())
         logger.info(reload_message.format(
             aut=current_automations,
             dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
         ))
-        self._reload_timer = time.time()
+        status.report('ok', stage='reload', automations=current_automations)
 
     def run_forever(self, *args, **kwargs):
         logger.info(init_message.format(
@@ -156,6 +173,10 @@ class Application(websocket.WebSocketApp):
             ent=len(models.EntityHandler.entities)
         ))
         models.EntityHandler.read_states()
+        git_sync.save_last_good_commit(git_sync.get_current_commit())
+        status.report(
+            'ok', stage='startup', automations=len(automations.AutomationHandler.automations)
+        )
         if 'wss' in self.ha_ws_url:
             kwargs['sslopt'] = {"cert_reqs": ssl.CERT_NONE}
         super().run_forever(*args, **kwargs)

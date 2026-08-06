@@ -1,14 +1,15 @@
 import setuptools
 
 install_requires = [
-    'requests',
-    'websocket-client',
-    'watchdog',
-    'zha-quirks',
-    'pydantic-settings',
-    'pytz',
-    'python-dateutil',
-    'gitpython'
+    'requests==2.34.2',
+    'websocket-client==1.9.0',
+    'watchdog==6.0.0',
+    'zha-quirks==2.2.0',
+    'zigpy==2.1.0',
+    'pydantic-settings==2.14.2',
+    'pytz==2026.3.post1',
+    'python-dateutil==2.9.0.post0',
+    'gitpython==3.1.58'
 ]
 
 
