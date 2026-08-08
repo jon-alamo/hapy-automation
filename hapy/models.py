@@ -127,14 +127,6 @@ class State:
         self.last_changed = helpers.parse_date(last_changed)
         self.last_updated = helpers.parse_date(last_updated)
         self.set_attributes(**attributes)
-        self.__setattr__ = self.__setattr
-
-    def __setattr(self, key, value):
-        if self.ha_instance and self.actual_entity_id:
-            self.ha_instance.set_state(
-                entity_id=self.actual_entity_id, data={key: value}
-            )
-        return super().__setattr__(key, value)
 
     def set_attributes(self, **attributes):
         for key, value in attributes.items():

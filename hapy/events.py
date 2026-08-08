@@ -1,4 +1,3 @@
-import json
 import logging
 import hapy.models as models
 import hapy.automations as automations
@@ -6,10 +5,6 @@ import hapy.helpers as helpers
 
 
 logger = helpers.get_logger('EventHandler')
-
-
-def send(ws, data):
-    return ws.send(json.dumps(data))
 
 
 def subscribe_to_state_changes():
@@ -66,7 +61,7 @@ event_handlers = {
     'state_changed': handle_state_change,
     'zha_event': handle_zha_event
 }
-"{'type': 'event', 'event': {'event_type': 'state_changed', 'data': {'entity_id': 'binary_sensor.s23_"
+
 
 def handle_message(message):
     if message['type'] != 'event':
