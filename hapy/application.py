@@ -116,11 +116,20 @@ class Application(websocket.WebSocketApp):
 
     def on_message(self, ws, message):
         events.handle_message(json.loads(message))
+        self.run_automation_cycle()
+        self.git_sync()
+
+    @staticmethod
+    def run_automation_cycle():
+        """Evaluate and fire whatever automations the event just delivered
+        to on_message() unblocked. Order matters: automations already
+        running get a chance to leave first, then newly-triggered ones are
+        checked and queued, then fired-device actions are cleared so the
+        next event starts from a clean slate."""
         automations.AutomationHandler.handle_exit_conditions()
         automations.AutomationHandler.check_automations()
         models.DeviceHandler.reset_fired_actions()
         automations.AutomationHandler.run_automations()
-        self.git_sync()
 
     def on_error(self, ws, error):
         logger.error(error)

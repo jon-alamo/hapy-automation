@@ -55,6 +55,17 @@ class Domain(metaclass=DomainFactory):
 
 
 class EntityHandler(type):
+    """Metaclass for every generated `Entity` subclass in entities.py.
+
+    `__getattribute__` is overridden so that *any* attribute access on an
+    Entity class (e.g. `entities.MyLight.state`) records that class in
+    `track_access`. `AutomationHandler.make_bindings` reads `track_access`
+    right after calling an automation's `init_condition()` to learn which
+    entities it touched — that's how an automation gets bound to the
+    entities that should re-trigger it, with no explicit wiring needed.
+    `reset_access()` clears it between automations so accesses don't leak
+    from one binding pass into the next.
+    """
     entities = {}
     homeassistant = HAInstance()
     track_access = dict()
@@ -185,6 +196,12 @@ class State:
 
 
 class DeviceHandler(type):
+    """Metaclass for every generated `Device` subclass in devices.py.
+
+    Same access-tracking trick as `EntityHandler`, but for ZHA device
+    action triggers (e.g. `devices.MySwitch.button_press`) instead of
+    entity state.
+    """
     devices = {}
     fired_actions = []
     track_access = dict()
