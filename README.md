@@ -26,7 +26,13 @@ HA_WS_URL=ws://<your-ha-instance>:<port>/api/websocket
 HA_TOKEN=<your-ha-token>
 LOG_LEVEL=INFO
 TIMEZONE=Europe/Madrid
+ENTITY_INCLUDE_PATTERN=
 ```
+
+`ENTITY_INCLUDE_PATTERN` is an optional regex. When set, only entities whose
+`entity_id` matches it are self-discovered into `entities.py`/`devices.py` on
+`hapy-init`/`hapy-update` — everything else is skipped. Leave it empty
+(the default) to keep discovering every entity, unchanged.
 
 Then, create the project structure and self-discovering feature by running the 
 following command from the directory where the .env file is located:

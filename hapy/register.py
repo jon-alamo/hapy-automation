@@ -1,9 +1,11 @@
 import hapy.helpers as helpers
 import json
+import re
 import zhaquirks
 import pkgutil
 import importlib
 import inspect
+from hapy.config import settings
 
 
 state_keys = {
@@ -63,6 +65,15 @@ def parse_state_data(state_data):
     return {
         k: helpers.parse_string_value(v) for k, v in state_data.items()
     }
+
+
+def entity_allowed(entity_id):
+    """Only entities matching ENTITY_INCLUDE_PATTERN are self-discovered.
+    An empty pattern (the default) keeps everything, unchanged."""
+    pattern = settings.entity_include_pattern
+    if not pattern:
+        return True
+    return bool(re.search(pattern, entity_id or ''))
 
 
 def register_entity(entity_data, register):
@@ -141,12 +152,16 @@ def register_domains(domains: list, register: dict):
 
 def register_entities(entities: dict, register: dict):
     for entity in entities['result']:
+        if not entity_allowed(entity.get('entity_id')):
+            continue
         register_entity(entity, register)
     return register
 
 
 def register_states(states: dict, register: dict):
     for state in states:
+        if not entity_allowed(state.get('entity_id')):
+            continue
         register_entity(state, register)
     return register
 
