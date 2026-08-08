@@ -12,8 +12,78 @@ logger = helpers.get_logger('git-sync')
 
 LOCAL_PATH = '.'
 REPOSITORY = config.settings.repository_url
-LAST_GOOD_COMMIT_FILE = os.path.join(LOCAL_PATH, '.hapy_last_good_commit')
-BLOCKED_COMMIT_FILE = os.path.join(LOCAL_PATH, '.hapy_blocked_commit')
+
+
+class CommitGuard:
+    """Crash-recovery bookkeeping for the automations checkout.
+
+    Remembers the last commit that started or reloaded successfully
+    (`mark_good`), so a broken pull can be undone (`rollback`). A rolled-back
+    commit is remembered as "blocked" so `pull_repo` won't just re-pull the
+    same broken commit on the next poll — it waits for a newer one. State is
+    two small files living next to the checkout, not in git.
+    """
+
+    def __init__(self, local_path):
+        self.local_path = local_path
+        self.last_good_file = os.path.join(local_path, '.hapy_last_good_commit')
+        self.blocked_file = os.path.join(local_path, '.hapy_blocked_commit')
+
+    def current_commit(self):
+        try:
+            return git.Repo(self.local_path).head.commit.hexsha
+        except Exception:
+            return None
+
+    def mark_good(self, sha):
+        if not sha:
+            return
+        with open(self.last_good_file, 'w') as f:
+            f.write(sha)
+
+    def last_good(self):
+        return self._read(self.last_good_file)
+
+    def blocked(self):
+        return self._read(self.blocked_file)
+
+    def clear_block(self):
+        if os.path.exists(self.blocked_file):
+            os.remove(self.blocked_file)
+
+    def rollback(self):
+        good_sha = self.last_good()
+        if not good_sha:
+            return False
+        try:
+            repo = git.Repo(self.local_path)
+            bad_sha = repo.head.commit.hexsha
+            if bad_sha == good_sha:
+                return False
+            repo.git.reset('--hard', good_sha)
+            self._block(bad_sha)
+            logger.warning(
+                f'[GIT_SYNC] - Rolled back {bad_sha[:8]} -> {good_sha[:8]} '
+                f'(blocking {bad_sha[:8]} until a new commit fixes it).'
+            )
+            return True
+        except Exception as e:
+            logger.error(f'[GIT_SYNC] - Rollback failed: {e}')
+            return False
+
+    def _block(self, sha):
+        with open(self.blocked_file, 'w') as f:
+            f.write(sha)
+
+    @staticmethod
+    def _read(path):
+        if not os.path.exists(path):
+            return None
+        with open(path, 'r') as f:
+            return f.read().strip() or None
+
+
+commit_guard = CommitGuard(LOCAL_PATH)
 
 
 def print_ssh_key(key):
@@ -155,7 +225,7 @@ def pull_repo():
         origin = repo.remotes.origin
         origin.fetch()
         remote_sha = repo.commit(f'origin/{repo.active_branch.name}').hexsha
-        blocked_sha = read_blocked_commit()
+        blocked_sha = commit_guard.blocked()
         if blocked_sha and remote_sha == blocked_sha:
             logger.warning(
                 f'[GIT_SYNC] - Remote is still at blocked commit {blocked_sha[:8]}, '
@@ -164,7 +234,7 @@ def pull_repo():
             return True
         origin.pull()
         if blocked_sha and remote_sha != blocked_sha:
-            clear_blocked_commit()
+            commit_guard.clear_block()
     except git.InvalidGitRepositoryError:
         files = preserve_files()
         try:
@@ -182,66 +252,3 @@ def async_git_pull():
     thread = threading.Thread(target=pull_repo)
     thread.start()
     return thread
-
-
-def get_current_commit():
-    try:
-        repo = git.Repo(LOCAL_PATH)
-        return repo.head.commit.hexsha
-    except Exception:
-        return None
-
-
-def save_last_good_commit(sha):
-    if not sha:
-        return
-    with open(LAST_GOOD_COMMIT_FILE, 'w') as f:
-        f.write(sha)
-
-
-def read_last_good_commit():
-    if not os.path.exists(LAST_GOOD_COMMIT_FILE):
-        return None
-    with open(LAST_GOOD_COMMIT_FILE, 'r') as f:
-        return f.read().strip() or None
-
-
-def save_blocked_commit(sha):
-    with open(BLOCKED_COMMIT_FILE, 'w') as f:
-        f.write(sha)
-
-
-def read_blocked_commit():
-    if not os.path.exists(BLOCKED_COMMIT_FILE):
-        return None
-    with open(BLOCKED_COMMIT_FILE, 'r') as f:
-        return f.read().strip() or None
-
-
-def clear_blocked_commit():
-    if os.path.exists(BLOCKED_COMMIT_FILE):
-        os.remove(BLOCKED_COMMIT_FILE)
-
-
-def rollback_to_last_good():
-    """Reset the local checkout to the last commit known to have started/reloaded
-    successfully, and block that broken commit from being re-pulled until a new
-    commit fixes it."""
-    good_sha = read_last_good_commit()
-    if not good_sha:
-        return False
-    try:
-        repo = git.Repo(LOCAL_PATH)
-        bad_sha = repo.head.commit.hexsha
-        if bad_sha == good_sha:
-            return False
-        repo.git.reset('--hard', good_sha)
-        save_blocked_commit(bad_sha)
-        logger.warning(
-            f'[GIT_SYNC] - Rolled back {bad_sha[:8]} -> {good_sha[:8]} '
-            f'(blocking {bad_sha[:8]} until a new commit fixes it).'
-        )
-        return True
-    except Exception as e:
-        logger.error(f'[GIT_SYNC] - Rollback failed: {e}')
-        return False

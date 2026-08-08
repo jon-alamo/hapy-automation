@@ -161,13 +161,13 @@ class Application(websocket.WebSocketApp):
             logger.error(
                 f'[RELOAD] - reload failed, keeping previous automations running: {e}'
             )
-            rolled_back = git_sync.rollback_to_last_good()
+            rolled_back = git_sync.commit_guard.rollback()
             status.report(
                 'error', stage='reload', error=str(e), rolled_back=rolled_back
             )
             return
         current_automations = len(automations.AutomationHandler.automations)
-        git_sync.save_last_good_commit(git_sync.get_current_commit())
+        git_sync.commit_guard.mark_good(git_sync.commit_guard.current_commit())
         logger.info(reload_message.format(
             aut=current_automations,
             dt=helpers.get_now().strftime('%Y-%m-%d %H:%M:%S')
@@ -182,7 +182,7 @@ class Application(websocket.WebSocketApp):
             ent=len(models.EntityHandler.entities)
         ))
         models.EntityHandler.read_states()
-        git_sync.save_last_good_commit(git_sync.get_current_commit())
+        git_sync.commit_guard.mark_good(git_sync.commit_guard.current_commit())
         status.report(
             'ok', stage='startup', automations=len(automations.AutomationHandler.automations)
         )

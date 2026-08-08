@@ -121,7 +121,7 @@ def run_application():
             app.run_forever()
         except Exception as e:
             logger.error(str(e))
-            rolled_back = git_sync.rollback_to_last_good()
+            rolled_back = git_sync.commit_guard.rollback()
             status.report('error', stage='startup', error=str(e), rolled_back=rolled_back)
             logger.error(f'Restarting in {restart_time} seconds ... ')
             time.sleep(restart_time)
