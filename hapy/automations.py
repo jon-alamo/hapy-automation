@@ -14,6 +14,17 @@ base_classes = [models.Entity, models.Device]
 
 
 class AutomationHandler(type):
+    """Metaclass driving automation self-registration.
+
+    Every time an `Automation` subclass is *defined* (including on module
+    reload), `__new__` below runs automatically and calls `make_bindings`,
+    which evaluates `init_condition()` once to see which entities/devices it
+    reads. Those accesses are captured via `EntityHandler`/`DeviceHandler`'s
+    own `__getattribute__` tracking, then used to bind the automation class
+    to the entities/devices that should re-check it on a state change.
+    There is no explicit registration call anywhere else in the codebase —
+    it all happens implicitly at class-definition time.
+    """
     to_check_automations = []
     to_run_automations = {}
     running_automations = {}
@@ -102,7 +113,7 @@ class AutomationHandler(type):
             cls.running_automations[name] = automation
             thread = threading.Thread(target=automation.run)
             thread.start()
-        cls.to_run_automations = []
+        cls.to_run_automations = {}
 
 
 class Automation(metaclass=AutomationHandler):
