@@ -111,6 +111,10 @@ class HAInstance:
         if not self._socket:
             self._ws_connect()
         self._socket.send(json.dumps(data))
+        # HA can interleave unrelated events on the same socket while we wait
+        # for our reply, so skip messages until one echoes back our own id
+        # (or give up after a bounded number of reads rather than blocking
+        # forever on a reply that's never coming).
         for _ in range(50):
             response = json.loads(self._socket.recv())
             if 'id' in response and response['id'] == data_id:
@@ -118,6 +122,9 @@ class HAInstance:
         return None
 
     def _format_values(self, iterable, **kwargs):
+        """Recursively str.format() every string value in a nested
+        dict/list/tuple/set, in place. Used to fill placeholders like
+        {access_token} into the ws_ref message templates above."""
         if type(iterable) is dict:
             for k, v in iterable.items():
                 if type(v) is str:

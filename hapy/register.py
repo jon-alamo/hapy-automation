@@ -39,6 +39,9 @@ domain_mapping = {
 
 
 def find_value(data, key):
+    """Resolve a dotted path like 'attributes.friendly_name' by walking
+    nested dicts one segment at a time, e.g. for entity/device payloads
+    from Home Assistant where the wanted field can be nested."""
     if key in data:
         return data[key]
     keys = key.split('.')
@@ -50,6 +53,10 @@ def find_value(data, key):
 
 
 def populate_dict(source_dict, mapping):
+    """Build a flat dict from source_dict using `mapping` (target_key ->
+    list of candidate dotted paths, tried in order, first hit wins). Used
+    to normalize HA's entity/device/state payloads into the fixed shape
+    the generators expect, regardless of which HA API returned them."""
     target_dict = {}
     for target_key, source_keys in mapping.items():
         for source_key in source_keys:
