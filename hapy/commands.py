@@ -99,29 +99,39 @@ def ensure_cwd_in_path():
         sys.path.insert(0, current_working_directory)
 
 
-def run_application():
-    while config.settings.auto_reset:
-        logger = helpers.get_logger('main')
-        try:
-            hapy.init_project()
-            ha_api_url = config.settings.ha_api_url
-            ha_ws_url = config.settings.ha_ws_url
-            ha_token = config.settings.ha_token
-            registry = hapy.get_registry()
-            ensure_cwd_in_path()
+def build_application():
+    """Pull the automations repo, discover the current registry, and wire up
+    an Application ready to run. Anything that goes wrong here (a broken
+    pull, a bad import in automations/) is handled by the caller's retry
+    loop, not here."""
+    hapy.init_project()
+    registry = hapy.get_registry()
+    ensure_cwd_in_path()
+    import automations
+    return hapy.Application(
+        automations_module=automations,
+        ha_api_url=config.settings.ha_api_url,
+        ha_ws_url=config.settings.ha_ws_url,
+        ha_token=config.settings.ha_token,
+        registry=registry
+    )
 
-            import automations
-            app = hapy.Application(
-                automations_module=automations,
-                ha_api_url=ha_api_url,
-                ha_ws_url=ha_ws_url,
-                ha_token=ha_token,
-                registry=registry
-            )
-            app.run_forever()
+
+def handle_startup_failure(logger, error):
+    """A failed startup means whatever commit we just pulled is broken.
+    Roll the checkout back to the last one that worked, surface it on the
+    HA status entity, and let the retry loop try again after a pause."""
+    logger.error(str(error))
+    rolled_back = git_sync.commit_guard.rollback()
+    status.report('error', stage='startup', error=str(error), rolled_back=rolled_back)
+    logger.error(f'Restarting in {restart_time} seconds ... ')
+    time.sleep(restart_time)
+
+
+def run_application():
+    logger = helpers.get_logger('main')
+    while config.settings.auto_reset:
+        try:
+            build_application().run_forever()
         except Exception as e:
-            logger.error(str(e))
-            rolled_back = git_sync.commit_guard.rollback()
-            status.report('error', stage='startup', error=str(e), rolled_back=rolled_back)
-            logger.error(f'Restarting in {restart_time} seconds ... ')
-            time.sleep(restart_time)
+            handle_startup_failure(logger, e)
