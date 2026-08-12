@@ -35,14 +35,17 @@ class AutomationHandler(type):
 
     @classmethod
     def make_bindings(cls, new_class):
+        models.enter_discovery_mode()
         try:
-            automation_obj = new_class().init_condition()
+            new_class().init_condition()
         except Exception as e:
             logger.warning(
                 f'{new_class.__name__} not bound to any entity or device due to '
                 f'init_condition error: {e}.'
             )
             return
+        finally:
+            models.exit_discovery_mode()
         for entity_id in models.EntityHandler.track_access:
             if entity_id not in cls.automation_bindings:
                 cls.automation_bindings[entity_id] = {}

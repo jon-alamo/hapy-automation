@@ -1,4 +1,5 @@
 import logging
+import threading
 from functools import wraps
 from types import FunctionType
 import hapy.homeassistant as homeassistant
@@ -7,6 +8,30 @@ from hapy.config import settings
 
 
 logger = helpers.get_logger('models')
+
+_discovery_state = threading.local()
+
+
+def enter_discovery_mode():
+    """Binding discovery runs init_condition() once, at class-definition
+    time, purely to see which entities/devices it touches (via
+    EntityHandler/DeviceHandler's access tracking) — the boolean result is
+    thrown away. While active, State.changed()/updated() always return
+    False so an `or`-chain of `.changed()` checks (the idiomatic way to
+    write init_condition) can never short-circuit past a real check just
+    because that particular entity happened to change recently — which
+    would silently drop the binding for every entity after it in the
+    chain. Thread-local so it can't bleed into automation threads running
+    concurrently with a reload."""
+    _discovery_state.active = True
+
+
+def exit_discovery_mode():
+    _discovery_state.active = False
+
+
+def in_discovery_mode():
+    return getattr(_discovery_state, 'active', False)
 
 
 def has_new_state(state):
@@ -174,6 +199,8 @@ class State:
         )
 
     def changed(self, old_value=None, new_value=None, offset=60):
+        if in_discovery_mode():
+            return False
         old_value = old_value if old_value is not None else self.old.state_value
         new_value = new_value if new_value is not None else self.state_value
 
@@ -185,6 +212,8 @@ class State:
         )
 
     def updated(self, attribute, old_value=None, new_value=None, seconds=5):
+        if in_discovery_mode():
+            return False
         old_value = old_value if old_value is not None else getattr(self.old, attribute)
         new_value = new_value if new_value is not None else getattr(self, attribute)
         return (
