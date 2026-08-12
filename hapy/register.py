@@ -7,6 +7,8 @@ import importlib
 import inspect
 from hapy.config import settings
 
+logger = helpers.get_logger('register')
+
 
 state_keys = {
     'last_changed': ['last_changed'],
@@ -180,6 +182,10 @@ def register_devices(devices: dict, register: dict):
 
 
 def register_signatures(register: dict):
+    """Walk zha-quirks to build a device-model -> quirk-class lookup used by
+    the devices.py generator. Some upstream quirk/builder modules ship with
+    broken relative imports (a known zha-quirks packaging issue); skip those
+    instead of letting one bad module abort the whole registry generation."""
     if 'device_signatures' not in register:
         register['device_signatures'] = {}
 
@@ -187,14 +193,22 @@ def register_signatures(register: dict):
             path=zhaquirks.__path__, onerror=lambda x: None
     ):
         package_route = f"zhaquirks.{package_name}"
-        package = importlib.import_module(package_route)
+        try:
+            package = importlib.import_module(package_route)
+        except Exception as e:
+            logger.warning(f'[REGISTER] - skipping unimportable package {package_route}: {e}')
+            continue
         if not ispkg:
             continue
         for _, module, is_pkg in pkgutil.walk_packages(package.__path__):
             if is_pkg:
                 continue
             module_route = f"{package_route}.{module}"
-            module = importlib.import_module(module_route)
+            try:
+                module = importlib.import_module(module_route)
+            except Exception as e:
+                logger.warning(f'[REGISTER] - skipping unimportable module {module_route}: {e}')
+                continue
             for class_name, obj in inspect.getmembers(module, inspect.isclass):
                 if hasattr(obj, 'signature') and obj.signature is not None:
                     device_key = zhaquirks.const.MODELS_INFO

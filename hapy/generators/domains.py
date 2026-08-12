@@ -45,17 +45,17 @@ def generate_docstring(service_data: dict, indent_level: int=2) -> str:
     indent = indent_level * INDENT
     fields_docstrings = [
         get_field_docstring(field_name, field_data, indent_level=indent_level)
-        for field_name, field_data in service_data['fields'].items()
+        for field_name, field_data in service_data.get('fields', {}).items()
     ]
     docstring_lines = [
-        f'{" " * indent}""" {service_data["description"]}',
+        f'{" " * indent}""" {service_data.get("description", "")}',
     ] + fields_docstrings + [f'{" " * indent}"""']
     return '\n'.join(docstring_lines)
 
 
 def generate_service_method(domain_name, service_name, service_data, indent_level=1):
     def_indent = indent_level * INDENT
-    fields = generate_fields(service_data['fields'])
+    fields = generate_fields(service_data.get('fields', {}))
     docstring = generate_docstring(service_data, indent_level=indent_level + 1)
     method_lines = [
         f'\n{" " * def_indent}def {service_name}({fields}):',

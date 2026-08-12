@@ -6,6 +6,7 @@ install_requires = [
     'watchdog==6.0.0',
     'zha-quirks==2.2.0',
     'zigpy==2.1.0',
+    'zha==2.1.0',
     'pydantic-settings==2.14.2',
     'pytz==2026.3.post1',
     'python-dateutil==2.9.0.post0',

@@ -1,5 +1,6 @@
 import zhaquirks
 import zigpy.quirks as quirks
+import zha.quirks as zha_quirks
 
 import hapy.helpers as helpers
 import importlib
@@ -9,8 +10,20 @@ import importlib
 zhaquirks.setup(zhaquirks.__path__[0])
 registry_v1 = quirks.DEVICE_REGISTRY.registry_v1
 # registry_v2 was removed from newer zigpy releases; degrade gracefully instead of
-# crashing the whole app at import time if it's gone.
+# crashing the whole app at import time if it's gone. Newer QuirkBuilder-based
+# quirks (IKEA, eWeLink, ...) don't register here at all anymore — see
+# get_device_quirk()'s zha.quirks fallback below.
 registry_v2 = getattr(quirks.DEVICE_REGISTRY, 'registry_v2', {})
+
+
+class V2QuirkTriggers:
+    """Adapter exposing a v2 QuirkBuilder quirk's device_automation_triggers
+    as an attribute, matching how v1 quirk classes carry it, so
+    get_action_references()/Device.handle_action_data() don't need to care
+    which quirk generation produced it."""
+
+    def __init__(self, triggers):
+        self.device_automation_triggers = triggers
 
 
 module_tmpl = """
@@ -43,6 +56,17 @@ def get_device_quirk(manufacturer, model):
         quirk = list(registry_v2[(manufacturer, model)])[0]
         attribute = 'device_automation_triggers_metadata'
         return quirk, attribute
+    # QuirkBuilder-based (v2) quirks register into a separate registry keyed
+    # by ModelInfo(manufacturer, model), each entry's triggers living under
+    # zha_device_factory.quirk_definition. This is a private attribute
+    # (_registry) because zha.quirks doesn't expose a public static lookup —
+    # only device-instance matching (match_entry) — so this may need
+    # revisiting on future zha-quirks upgrades.
+    key = zha_quirks.ModelInfo(manufacturer, model)
+    for entry in zha_quirks.DEVICE_REGISTRY._registry.get(key, []):
+        triggers = entry.zha_device_factory.quirk_definition.device_automation_triggers
+        if triggers:
+            return V2QuirkTriggers(triggers), 'device_automation_triggers'
     return None, None
 
 
