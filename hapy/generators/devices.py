@@ -47,20 +47,22 @@ class {class_name}(models.Device):
 
 
 def get_device_quirk(manufacturer, model):
-    # Mirrors zigpy's own device-matching fallback chain (manufacturer+model,
-    # then wildcard manufacturer, then wildcard model, then fully generic) —
-    # some quirks (e.g. generic Tuya scene switches like TS0043) are
-    # registered under manufacturer=None to match any vendor's re-branding
-    # of the same hardware, and only checking the exact manufacturer string
-    # was missing those entirely.
+    # Try the exact manufacturer, then a manufacturer-agnostic quirk for
+    # this *exact* model — some quirks (e.g. generic Tuya scene switches
+    # like TS0043) are registered under manufacturer=None to match any
+    # vendor's re-branding of the same hardware. Deliberately NOT also
+    # wildcarding the model: a manufacturer-only match (any model from
+    # this vendor) is how zigpy's own device-matching chain behaves, but
+    # for known, specific (manufacturer, model) pairs it's more likely to
+    # silently attach an unrelated quirk than to find a real match — e.g.
+    # matching IKEA's "Remote Control N2" against some unrelated wildcard
+    # IKEA quirk instead of correctly falling through to the v2 registries
+    # below, where its real (migrated) quirk actually lives.
     for candidate_manufacturer in (manufacturer, None):
         bucket = registry_v1.get(candidate_manufacturer)
-        if not bucket:
-            continue
-        for candidate_model in (model, None):
-            if candidate_model in bucket:
-                quirk = list(bucket[candidate_model])[0]
-                return quirk, 'device_automation_triggers'
+        if bucket and model in bucket:
+            quirk = list(bucket[model])[0]
+            return quirk, 'device_automation_triggers'
     if (manufacturer, model) in registry_v2:
         quirk = list(registry_v2[(manufacturer, model)])[0]
         attribute = 'device_automation_triggers_metadata'
