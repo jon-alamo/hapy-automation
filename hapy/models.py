@@ -208,7 +208,7 @@ class State:
             old_value == self.old.state_value
             and new_value == self.state_value
             and new_value != old_value
-            and (helpers.get_now() - self.last_changed).seconds < offset
+            and abs((helpers.get_now() - self.last_changed).total_seconds()) < offset
         )
 
     def updated(self, attribute, old_value=None, new_value=None, seconds=5):
@@ -220,7 +220,7 @@ class State:
             old_value == getattr(self.old, attribute)
             and new_value == getattr(self, attribute)
             and new_value != old_value
-            and (helpers.get_now() - self.last_updated).seconds < seconds
+            and abs((helpers.get_now() - self.last_updated).total_seconds()) < seconds
         )
 
 
