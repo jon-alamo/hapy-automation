@@ -32,8 +32,14 @@ class TelegramClient:
     def _url(self, method: str) -> str:
         return f"{API_BASE}/bot{self._token}/{method}"
 
-    async def _post(self, method: str, timeout: int = 30, **params) -> dict:
-        client_timeout = aiohttp.ClientTimeout(total=timeout + 10)
+    async def _post(self, method: str, http_timeout: int = 30, **params) -> dict:
+        # `http_timeout` (our aiohttp client-side deadline) is deliberately
+        # a different name from Telegram's own `timeout` request parameter
+        # (the long-poll duration, sent as part of **params for getUpdates)
+        # — passing both as `timeout=` collided as a duplicate keyword
+        # argument, found the first time this actually ran against the
+        # real bot (never exercised locally, since it needs a live token).
+        client_timeout = aiohttp.ClientTimeout(total=http_timeout + 10)
         async with self._session.post(
                 self._url(method), json=params, timeout=client_timeout
         ) as resp:
@@ -48,7 +54,7 @@ class TelegramClient:
         params = {"timeout": timeout, "allowed_updates": ["message"]}
         if offset is not None:
             params["offset"] = offset
-        return await self._post("getUpdates", timeout=timeout, **params)
+        return await self._post("getUpdates", http_timeout=timeout, **params)
 
     async def send_message(self, chat_id: int, text: str) -> None:
         # Telegram's hard limit is 4096 chars per message; split long
