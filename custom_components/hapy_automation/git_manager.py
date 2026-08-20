@@ -117,3 +117,27 @@ class GitManager:
         sha = repo.commit(f'origin/{self.branch}').hexsha
         repo.git.reset('--hard', sha)
         return sha
+
+    def commit_and_push(
+            self, message: str, author_name: str = 'Hapy Agent',
+            author_email: str = 'hapy-agent@localhost',
+    ) -> str | None:
+        """Stage every change in the working tree, commit, and push to
+        origin/<branch>. Returns the new commit SHA, or None if there was
+        nothing to commit. Requires the configured credentials to have
+        *write* access — unlike every other GitManager operation, which
+        only ever needs read access."""
+        repo = self._repo()
+        repo.git.add(A=True)
+        if not repo.is_dirty(untracked_files=True):
+            return None
+        author = git.Actor(author_name, author_email)
+        repo.index.commit(message, author=author, committer=author)
+        try:
+            with repo.git.custom_environment(**self._git_env()):
+                repo.remotes.origin.push(self.branch)
+        except git.GitCommandError as e:
+            raise GitOperationError(
+                f"No se pudo hacer push a {self.repo_url} (rama {self.branch}): {e}"
+            ) from e
+        return repo.head.commit.hexsha

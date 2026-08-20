@@ -91,3 +91,49 @@ SERVICE_RELOAD = "reload"
 SERVICE_EXPORT_STUBS = "export_stubs"
 
 SIGNAL_RELOAD_COMPLETE = f"{DOMAIN}_reload_complete"
+
+# -- Conversational agent (Telegram + OpenAI-compatible LLM) ---------------
+
+CONF_ENABLE_AGENT = "enable_agent"
+CONF_TELEGRAM_BOT_TOKEN = "telegram_bot_token"
+CONF_TELEGRAM_ALLOWED_CHAT_IDS = "telegram_allowed_chat_ids"
+CONF_LLM_API_BASE_URL = "llm_api_base_url"
+CONF_LLM_API_KEY = "llm_api_key"
+CONF_LLM_MODEL = "llm_model"
+CONF_SYSTEM_PROMPT = "system_prompt"
+CONF_STT_MODEL = "stt_model"
+CONF_TTS_MODEL = "tts_model"
+CONF_TTS_VOICE = "tts_voice"
+
+DEFAULT_ENABLE_AGENT = False
+DEFAULT_LLM_API_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_LLM_MODEL = "gpt-4o-mini"
+DEFAULT_STT_MODEL = "whisper-1"
+DEFAULT_TTS_MODEL = "tts-1"
+DEFAULT_TTS_VOICE = "alloy"
+
+DEFAULT_SYSTEM_PROMPT = (
+    "Eres el agente de automatizaciones de esta casa, integrado en Home "
+    "Assistant a través de hapy_automation. Puedes consultar el estado "
+    "real de cualquier entidad, llamar a servicios, y leer/escribir "
+    "ficheros del repositorio de automatizaciones (Python, API "
+    "hapy.Automation: init_condition()/action()/exit_condition(), acceso "
+    "a entidades vía entities.X.state / entities.X.services, a "
+    "dispositivos Zigbee vía devices.X.<trigger>).\n\n"
+    "Reglas:\n"
+    "- Antes de actuar o afirmar el estado de algo, consúltalo de verdad "
+    "con las herramientas — no asumas ni inventes valores.\n"
+    "- Al escribir o modificar una automatización, usa "
+    "git_commit_and_push, que además dispara una recarga real; revisa "
+    "SIEMPRE el resultado que te devuelve (ok/error) antes de dar la "
+    "tarea por terminada — si falla, corrige y vuelve a intentarlo tú "
+    "mismo dentro de la misma conversación.\n"
+    "- Sé conciso en tus respuestas finales al usuario: confirma qué "
+    "hiciste y el resultado real, sin relatar cada paso intermedio.\n"
+    "- Si una petición es ambigua o arriesgada (p.ej. afecta a "
+    "climatización, riego, o cierres), pregunta antes de actuar."
+)
+
+AGENT_MAX_ITERATIONS = 12
+AGENT_MAX_SECONDS = 120
+TELEGRAM_POLL_TIMEOUT = 30
