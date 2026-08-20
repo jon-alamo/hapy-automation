@@ -10,6 +10,16 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+# hapy/helpers.py imported dateutil.parser as dt_parser at module level,
+# so any automation code doing `hapy.helpers.dt_parser.parse(...)` (e.g.
+# home-automations/automations/climate.py's is_on_time()) relied on it
+# being re-exported transitively from the old library — not something
+# used internally by this module, just carried through. Found for real:
+# missing this made is_on_time() raise AttributeError, which — inside an
+# `or` chain in action() — silently aborted the whole action() before the
+# exception-safety fix in runtime/automations.py made it visible at all.
+import dateutil.parser as dt_parser  # noqa: F401 — re-exported for automation code, not used here
+
 _tz = ZoneInfo("UTC")
 
 

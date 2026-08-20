@@ -168,6 +168,20 @@ class Automation(metaclass=AutomationHandler):
         # models.RUNTIME_LOCK's docstring for why this locking exists at
         # all: these calls touch Entity/Device classes the same way
         # binding discovery does.
+        #
+        # This whole method is the target of a raw threading.Thread — an
+        # uncaught exception here doesn't go through our logger at all
+        # (Python's default threading.excepthook writes straight to
+        # stderr), and on this deployment that turned out to be
+        # invisible even in `ha core logs`. Catch broadly and log through
+        # our own logger so a broken action()/exit_condition() in user
+        # code is never silently swallowed again.
+        try:
+            self._run()
+        except Exception:
+            logger.exception('[AUTOMATIONS] %s crashed', self.__class__.__name__)
+
+    def _run(self):
         with models.RUNTIME_LOCK:
             self.action()
         t0 = time.time()
