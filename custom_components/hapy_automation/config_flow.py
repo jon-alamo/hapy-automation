@@ -6,6 +6,7 @@ usarla con su propio repo")."""
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from typing import Any
 
@@ -17,6 +18,7 @@ from .const import (
     AUTH_METHOD_NONE,
     AUTH_METHOD_PAT,
     AUTH_METHOD_SSH_KEY,
+    AUTH_METHOD_SSH_KEY_GENERATE,
     CONF_AUTH_METHOD,
     CONF_BRANCH,
     CONF_DRY_RUN,
@@ -53,8 +55,19 @@ from .const import (
     DEFAULT_TTS_VOICE,
     DOMAIN,
 )
+from .ssh_keygen import SshKeygenError, generate_keypair
 
-AUTH_METHODS = [AUTH_METHOD_SSH_KEY, AUTH_METHOD_PAT, AUTH_METHOD_NONE]
+AUTH_METHODS = [
+    AUTH_METHOD_SSH_KEY, AUTH_METHOD_SSH_KEY_GENERATE, AUTH_METHOD_PAT, AUTH_METHOD_NONE,
+]
+
+
+def _slugify(repo_url: str) -> str:
+    name = repo_url.rstrip('/').rsplit('/', 1)[-1]
+    if name.endswith('.git'):
+        name = name[:-4]
+    slug = re.sub(r'[^a-zA-Z0-9]+', '-', name).strip('-').lower()
+    return slug or 'repo'
 
 
 def _base_schema(defaults: dict) -> vol.Schema:
@@ -91,6 +104,8 @@ def _validate(user_input: dict) -> dict:
     elif user_input[CONF_AUTH_METHOD] == AUTH_METHOD_PAT:
         if not user_input.get(CONF_PAT):
             errors[CONF_PAT] = 'pat_required'
+    # AUTH_METHOD_SSH_KEY_GENERATE needs no user-supplied path — the flow
+    # generates the key itself in a follow-up step (async_step_generate_key).
     return errors
 
 
@@ -116,6 +131,21 @@ def _agent_schema(defaults: dict) -> vol.Schema:
             CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
         ): str,
     })
+
+
+async def _generate_key_for(hass, repo_data: dict) -> str:
+    """Generates (or reuses) an ed25519 keypair for this repo under
+    /config/.ssh/, mutates `repo_data` in place to point at it as a
+    normal ssh_key auth, and returns the public key text to show the
+    user. Raises SshKeygenError (message safe to display) on failure."""
+    slug = _slugify(repo_data[CONF_REPO_URL])
+    key_path = hass.config.path('.ssh', f'hapy_automation_{slug}')
+    public_key = await hass.async_add_executor_job(
+        generate_keypair, key_path, f'hapy-automation-{slug}'
+    )
+    repo_data[CONF_AUTH_METHOD] = AUTH_METHOD_SSH_KEY
+    repo_data[CONF_SSH_KEY_PATH] = key_path
+    return public_key
 
 
 def _validate_agent(user_input: dict) -> dict:
@@ -146,9 +176,31 @@ class HapyAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._repo_data = dict(user_input)
                 if self._repo_data.get(CONF_ENABLE_WEBHOOK):
                     self._repo_data[CONF_WEBHOOK_ID] = secrets.token_hex(16)
+                if self._repo_data.get(CONF_AUTH_METHOD) == AUTH_METHOD_SSH_KEY_GENERATE:
+                    return await self.async_step_generate_key()
                 return await self.async_step_agent()
         return self.async_show_form(
             step_id='user', data_schema=_base_schema(user_input or {}), errors=errors,
+        )
+
+    async def async_step_generate_key(self, user_input: dict[str, Any] | None = None):
+        # Reached only when auth_method == ssh_key_generate. First entry
+        # (user_input is None): generate the key and show its public half
+        # for the user to add as a deploy key. Second entry (they clicked
+        # Submit after doing that): move on to the agent step.
+        if user_input is not None:
+            return await self.async_step_agent()
+        try:
+            public_key = await _generate_key_for(self.hass, self._repo_data)
+        except SshKeygenError as e:
+            return self.async_show_form(
+                step_id='user', data_schema=_base_schema(self._repo_data),
+                errors={CONF_AUTH_METHOD: 'ssh_keygen_failed'},
+                description_placeholders={'error': str(e)},
+            )
+        return self.async_show_form(
+            step_id='generate_key', data_schema=vol.Schema({}),
+            description_placeholders={'public_key': public_key},
         )
 
     async def async_step_agent(self, user_input: dict[str, Any] | None = None):
@@ -196,12 +248,35 @@ class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
                     data[CONF_WEBHOOK_ID] = secrets.token_hex(16)
                 elif current.get(CONF_WEBHOOK_ID):
                     data[CONF_WEBHOOK_ID] = current[CONF_WEBHOOK_ID]
+                if data.get(CONF_AUTH_METHOD) == AUTH_METHOD_SSH_KEY_GENERATE:
+                    self._pending_repo_data = data
+                    return await self.async_step_repo_generate_key()
                 self.hass.config_entries.async_update_entry(
                     self.config_entry, data={**self.config_entry.data, **data}
                 )
                 return self.async_create_entry(title='', data={})
         return self.async_show_form(
             step_id='repo', data_schema=_base_schema(current), errors=errors,
+        )
+
+    async def async_step_repo_generate_key(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data={**self.config_entry.data, **self._pending_repo_data}
+            )
+            return self.async_create_entry(title='', data={})
+        try:
+            public_key = await _generate_key_for(self.hass, self._pending_repo_data)
+        except SshKeygenError as e:
+            current = {**self.config_entry.data, **self.config_entry.options}
+            return self.async_show_form(
+                step_id='repo', data_schema=_base_schema(current),
+                errors={CONF_AUTH_METHOD: 'ssh_keygen_failed'},
+                description_placeholders={'error': str(e)},
+            )
+        return self.async_show_form(
+            step_id='repo_generate_key', data_schema=vol.Schema({}),
+            description_placeholders={'public_key': public_key},
         )
 
     async def async_step_agent(self, user_input: dict[str, Any] | None = None):

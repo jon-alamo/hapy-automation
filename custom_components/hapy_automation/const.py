@@ -14,6 +14,7 @@ CONF_ENABLE_WEBHOOK = "enable_webhook"
 CONF_WEBHOOK_ID = "webhook_id"
 
 AUTH_METHOD_SSH_KEY = "ssh_key"
+AUTH_METHOD_SSH_KEY_GENERATE = "ssh_key_generate"
 AUTH_METHOD_PAT = "personal_access_token"
 AUTH_METHOD_NONE = "none"
 

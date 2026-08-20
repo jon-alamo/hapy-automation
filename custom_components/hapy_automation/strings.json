@@ -32,6 +32,10 @@
           "tts_voice": "Voz",
           "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
         }
+      },
+      "generate_key": {
+        "title": "Deploy key generada",
+        "description": "Añade esta clave pública como Deploy Key en tu repositorio de GitHub (Settings → Deploy keys → Add deploy key) — marca \"Allow write access\" si quieres que un repo vacío se autoinicialice o que el agente pueda hacer push. Cuando la hayas añadido, pulsa Enviar para continuar.\n\n```\n{public_key}\n```"
       }
     },
     "error": {
@@ -40,7 +44,8 @@
       "pat_required": "Indica un token de acceso personal.",
       "telegram_bot_token_required": "Indica el token del bot de Telegram.",
       "telegram_allowed_chat_ids_required": "Indica al menos un chat_id autorizado.",
-      "llm_api_key_required": "Indica la API key del LLM."
+      "llm_api_key_required": "Indica la API key del LLM.",
+      "ssh_keygen_failed": "No se pudo generar la clave SSH: {error}"
     }
   },
   "options": {
@@ -78,7 +83,20 @@
           "tts_voice": "Voz",
           "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
         }
+      },
+      "repo_generate_key": {
+        "title": "Deploy key generada",
+        "description": "Añade esta clave pública como Deploy Key en tu repositorio de GitHub (Settings → Deploy keys → Add deploy key) — marca \"Allow write access\" si quieres que un repo vacío se autoinicialice o que el agente pueda hacer push. Cuando la hayas añadido, pulsa Enviar para continuar.\n\n```\n{public_key}\n```"
       }
+    },
+    "error": {
+      "ssh_key_path_required": "Indica la ruta a la deploy key SSH.",
+      "ssh_key_path_not_found": "No se encuentra un fichero en esa ruta.",
+      "pat_required": "Indica un token de acceso personal.",
+      "telegram_bot_token_required": "Indica el token del bot de Telegram.",
+      "telegram_allowed_chat_ids_required": "Indica al menos un chat_id autorizado.",
+      "llm_api_key_required": "Indica la API key del LLM.",
+      "ssh_keygen_failed": "No se pudo generar la clave SSH: {error}"
     }
   }
 }
