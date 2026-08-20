@@ -1,62 +1,129 @@
-# hapy-automation
+# Hapy Automation
 
-### Home Assistant Python Automation Tool
+A Home Assistant integration that runs **Python-authored automations** directly
+inside Home Assistant's own process, deployed straight from a git repository
+you own. Write automations with a small, typed API against your instance's
+real entities, devices and services — push to your repo, and Hapy Automation
+picks it up automatically.
 
-Automation flow execution for Home Assistant using Python.
-It comes with a self-discovery feature that generates Python modules where 
-entities, devices and services are type-hinted and bound statically, so the 
-IDE can provide auto-completion and type checking when creating automations 
-based on state changes in entities or action triggers in devices (if using ZHA 
-Plugin).
+No separate container, no external service, no outbound connection to Home
+Assistant to maintain: the integration runs in-process, reads live state from
+`hass`, and reloads itself by polling (and optionally a webhook) your repo.
 
+## How it works
 
-## Installation with pip
+1. You point the integration at a git repository containing your automations,
+   written in Python against the API described below.
+2. On every reload, Hapy Automation generates three modules in memory —
+   `entities.py`, `devices.py`, `domains.py` — from your Home Assistant
+   instance's *current* live state (`hass.states`, the entity/device
+   registries, the service registry). These give you a typed class per
+   entity/device/service domain to write automations against, and IDE
+   autocompletion when you export them locally (see below).
+3. Your repository's `automations` package is imported against those
+   generated modules. Every `hapy.Automation` subclass you define registers
+   and binds itself automatically — no manual wiring.
+4. The integration polls your repo on an interval (and/or listens on a
+   webhook) for new commits. On a new commit: fetch, checkout, regenerate,
+   reimport, rebind — atomically. If anything in that sequence fails, the
+   previous known-good state keeps running untouched and the checkout rolls
+   back; nothing is left half-updated.
 
-```bash
-pip install git+https://github.com/jon-alamo/hapy-automation.git
-```
+## Installation
 
-## First steps
+Not yet published to the default HACS store. Add it as a custom repository:
 
-### Starting new project
-To start a new automation project, first create a .env file with the following:
-```bash
-HA_API_URL=http://<your-ha-instance>:<port>/api
-HA_WS_URL=ws://<your-ha-instance>:<port>/api/websocket
-HA_TOKEN=<your-ha-token>
-LOG_LEVEL=INFO
-TIMEZONE=Europe/Madrid
-ENTITY_INCLUDE_PATTERN=
-```
+1. HACS → Integrations → ⋮ menu → **Custom repositories**.
+2. Add `https://github.com/jon-alamo/hapy-automation`, category **Integration**.
+3. Install **Hapy Automation**, then restart Home Assistant.
+4. Settings → Devices & services → **Add integration** → search for
+   *Hapy Automation*.
 
-`ENTITY_INCLUDE_PATTERN` is an optional regex. When set, only entities whose
-`entity_id` matches it are self-discovered into `entities.py`/`devices.py` on
-`hapy-init`/`hapy-update` — everything else is skipped. Leave it empty
-(the default) to keep discovering every entity, unchanged.
+## Configuration
 
-Then, create the project structure and self-discovering feature by running the 
-following command from the directory where the .env file is located:
-```bash
-hapy-init
-```
+The config flow asks for:
 
-### Running automations
-```
-hapy-run
-```
+| Field | Description |
+|---|---|
+| Repository URL | SSH (`git@github.com:you/your-automations.git`) or HTTPS |
+| Branch | Defaults to `main` |
+| Auth method | `ssh_key`, `personal_access_token`, or `none` for a public repo |
+| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`). Generate one yourself and add the public half as a **deploy key** (read-only) on your repository — this integration never generates or stores keys for you. |
+| Personal access token | For `personal_access_token`: a token with read access to the repo |
+| Entity include pattern | Regex; see **Entity filtering** below |
+| Poll interval (minutes) | How often to check the repo for new commits (default 1) |
+| Dry run | See below (default **on**) |
+| Enable webhook | Registers a Home Assistant webhook for near-instant reload on push, in addition to polling |
 
-### Automations
-By default, the `hapy-init` command creates an `automations.py` file in the 
-project root. For readability and maintainability, automations can be created 
-in separate files as long as they are referenced under the `automations` 
-namespace imported when the project is started. So for instance, 
-`automations.py` file can be replaced by a python package named `automations` 
-containing several modules with automations and a `__init__.py` which imports 
-all the modules.
+All of these can be changed later from the integration's **Configure** options.
 
-#### Defining some automations
+### Dry run
 
-Whichever module containing automations to be used, should look like follows:
+New installs start in dry-run mode. In dry run, everything runs for real —
+your repo is cloned, entities/devices/domains are generated, automations are
+imported and bound, and `init_condition()` is evaluated on every real event —
+**except** that no Home Assistant service call actually goes out;
+`entities.X.services.turn_on(...)` etc. are logged instead of executed. Use
+this to verify your repository loads cleanly and automations bind to what you
+expect (check the diagnostic sensors below) before flipping it off.
+
+### Entity filtering
+
+A real Home Assistant instance can have thousands of entities; generating a
+class for every single one makes `entities.py` unwieldy and slow to browse.
+By convention:
+
+- Entities in directly-actionable domains (`light`, `switch`, `climate`,
+  `cover`, `input_boolean`, `select`, `sun`, `zone`, `person`, and similar —
+  see `const.ALWAYS_INCLUDED_DOMAINS`) are always included.
+- Everything else (most of `sensor`, `binary_sensor`, `device_tracker`, which
+  can number in the hundreds) is only included if its `entity_id` matches
+  **Entity include pattern**. The suggested convention is to rename entities
+  you want available as `..._hapy` in Home Assistant and set the pattern to
+  `_hapy$`.
+
+### Webhook
+
+If enabled, the integration registers a webhook at
+`https://<your-ha-instance>/api/webhook/<webhook_id>` (the id is generated
+automatically and shown in the integration's options). Point a GitHub Action
+or your repo's webhook settings at it on push for near-instant reload; polling
+remains as a reliable fallback if the webhook is unreachable.
+
+## Diagnostic entities
+
+Each configured repo gets:
+
+- `sensor.<repo>_hapy_automation_current_commit` — the commit SHA currently
+  running.
+- `sensor.<repo>_hapy_automation_last_reload_status` — `ok` or `error`, with
+  the full error message as an attribute if something failed.
+- `sensor.<repo>_hapy_automation_last_would_have_fired` — in dry run, the
+  last automation that would have executed `action()`.
+- `button.<repo>_hapy_automation_reload_now` — force an immediate reload.
+
+Check the current-commit sensor against your repo's actual HEAD, not just the
+absence of errors in the log, when you want to confirm a push really landed.
+
+## Services
+
+- `hapy_automation.reload` — force a reload of all configured repos now.
+- `hapy_automation.export_stubs` — write the currently-generated
+  `entities.py`/`devices.py`/`domains.py` to a folder (default
+  `<config>/www/hapy_automation_stubs`) so you can copy them into your local
+  checkout for IDE autocompletion. These files are never committed back to
+  your repo automatically.
+
+## Writing automations
+
+Your repository needs, at minimum, a top-level `automations` package —
+typically a directory with an `__init__.py` that imports every submodule
+(`from .lighting import *`, etc.), matching however you like to organize
+files. Anything else in the repo (a `helpers` package, constants, etc.) is
+just plain Python you can import from your automation modules.
+
+Do **not** commit generated `entities.py`/`devices.py`/`domains.py` — they're
+regenerated fresh from live state on every reload and would only go stale.
 
 ```python
 import hapy
@@ -70,7 +137,7 @@ class OnMySwitchOn(hapy.Automation):
         return devices.MySwitch.remote_button_short_press_turn_on
 
     def action(self):
-        entities.MyLight.turn_on()
+        entities.MyLight.services.turn_on()
 
 
 class OnMySwitchDimUp(hapy.Automation):
@@ -80,7 +147,7 @@ class OnMySwitchDimUp(hapy.Automation):
 
     def exit_condition(self):
         return devices.MySwitch.remote_button_long_release_dim_up
-    
+
     def action(self):
         entities.MyLight.services.turn_on(brightness_step_pct=10)
 
@@ -94,23 +161,45 @@ class OnMyLightTurnedOn(hapy.Automation):
         entities.MySecondLight.services.turn_off()
 ```
 
-### Running app
+- `init_condition()` is evaluated on every relevant Home Assistant event; when
+  it returns true, `action()` runs. The entities/devices your
+  `init_condition()` touches are discovered automatically the moment the
+  class is defined (on import/reload) — there's no explicit subscription
+  step. Write `or`-chains freely (`a.state.changed() or b.state.changed()`)
+  without worrying about one operand's real value at reload time hiding the
+  binding for the rest of the chain.
+- `exit_condition()` (optional) keeps `action()` running on a
+  `step_time`-interval loop until it returns true, or `timeout` seconds pass —
+  useful for "while this button is held" patterns.
+- `entities.X.state.changed(old_value=None, new_value=None, offset=60)` /
+  `.updated(attribute, ..., seconds=5)` — true if the value changed to what
+  you expect within the last `offset`/`seconds`.
+- `entities.X.services.<service_name>(...)` — calls the matching Home
+  Assistant service for that entity's domain, with full IDE-visible keyword
+  arguments and docstrings once you've exported stubs locally.
+- `devices.X.<action_name>` — a boolean that's momentarily `True` when a ZHA
+  device trigger (button press, etc.) fires; requires the `zha` integration
+  configured with a device whose quirk exposes `device_automation_triggers`.
 
-Tu run the app, just execute the following command from the project root:
+## Migrating from the old `hapy` pip package
 
-```bash
-python application.py
-```
+If you used the previous `pip install hapy-automation` + Docker container
+setup: your existing `automations`/`helpers` code should work with this
+integration largely unchanged. `import hapy`, `import hapy.automations as
+automations`, `import hapy.helpers as hapy_helpers` all keep working. Remove
+any checked-in `entities.py`/`devices.py`/`domains.py`/`.registry` from your
+repo — they're no longer needed and would just be dead weight (the
+integration never reads them; everything is regenerated from live state).
 
-At this stage of the application, automation files are watched for changes and
-reloaded automatically when detected. 
+## Known limitations
 
-
-### Updating entities and devices
-
-Tu update entities and devices in an existing project, just execute the 
-`hapy-update` command from the project root. This will execute the self-discovery
-feature and update the entities and devices modules with the new entities and
-devices found in the Home Assistant instance. At this point, entities that 
-changed their entity_id in Home Assistant will disappear from the entities.py 
-module and therefore, any automation using them will raise an error.
+- One actively-configured automations repo per Home Assistant instance is the
+  supported/tested case. Multiple config entries are mechanically possible
+  but their generated `entities`/`devices`/`domains` modules aren't currently
+  namespaced against each other.
+- Reload and live automation execution are currently serialized against each
+  other via a single process-wide lock, to guarantee correct entity/device
+  bindings. This means two automations that would otherwise run truly
+  concurrently (e.g. two held-down dimmer switches in different rooms at the
+  same instant) briefly queue behind each other rather than executing in
+  parallel — a deliberate correctness-over-concurrency trade-off.
