@@ -97,12 +97,16 @@ class HapyAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return HapyAutomationOptionsFlow(config_entry)
+        return HapyAutomationOptionsFlow()
 
 
 class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
+    # Do NOT set self.config_entry in __init__ — modern Home Assistant
+    # (2024.12+) provides it automatically via a property on the base
+    # OptionsFlow class; explicitly assigning it here was a common pattern
+    # in older custom integrations (HACS itself had to fix this — see
+    # hacs/integration#4314) and now breaks with a 500 on
+    # /api/config/config_entries/options/flow instead of just warning.
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
