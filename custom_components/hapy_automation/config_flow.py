@@ -20,18 +20,35 @@ from .const import (
     CONF_AUTH_METHOD,
     CONF_BRANCH,
     CONF_DRY_RUN,
+    CONF_ENABLE_AGENT,
     CONF_ENABLE_WEBHOOK,
     CONF_ENTITY_INCLUDE_PATTERN,
+    CONF_LLM_API_BASE_URL,
+    CONF_LLM_API_KEY,
+    CONF_LLM_MODEL,
     CONF_PAT,
     CONF_POLL_INTERVAL_MINUTES,
     CONF_REPO_URL,
     CONF_SSH_KEY_PATH,
+    CONF_STT_MODEL,
+    CONF_SYSTEM_PROMPT,
+    CONF_TELEGRAM_ALLOWED_CHAT_IDS,
+    CONF_TELEGRAM_BOT_TOKEN,
+    CONF_TTS_MODEL,
+    CONF_TTS_VOICE,
     CONF_WEBHOOK_ID,
     DEFAULT_BRANCH,
     DEFAULT_DRY_RUN,
+    DEFAULT_ENABLE_AGENT,
     DEFAULT_ENABLE_WEBHOOK,
     DEFAULT_ENTITY_INCLUDE_PATTERN,
+    DEFAULT_LLM_API_BASE_URL,
+    DEFAULT_LLM_MODEL,
     DEFAULT_POLL_INTERVAL_MINUTES,
+    DEFAULT_STT_MODEL,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TTS_MODEL,
+    DEFAULT_TTS_VOICE,
     DOMAIN,
 )
 
@@ -75,23 +92,75 @@ def _validate(user_input: dict) -> dict:
     return errors
 
 
+def _agent_schema(defaults: dict) -> vol.Schema:
+    return vol.Schema({
+        vol.Optional(CONF_ENABLE_AGENT, default=defaults.get(CONF_ENABLE_AGENT, DEFAULT_ENABLE_AGENT)): bool,
+        vol.Optional(CONF_TELEGRAM_BOT_TOKEN, default=defaults.get(CONF_TELEGRAM_BOT_TOKEN, '')): str,
+        vol.Optional(
+            CONF_TELEGRAM_ALLOWED_CHAT_IDS, default=defaults.get(CONF_TELEGRAM_ALLOWED_CHAT_IDS, '')
+        ): str,
+        vol.Optional(
+            CONF_LLM_API_BASE_URL, default=defaults.get(CONF_LLM_API_BASE_URL, DEFAULT_LLM_API_BASE_URL)
+        ): str,
+        vol.Optional(CONF_LLM_API_KEY, default=defaults.get(CONF_LLM_API_KEY, '')): str,
+        vol.Optional(CONF_LLM_MODEL, default=defaults.get(CONF_LLM_MODEL, DEFAULT_LLM_MODEL)): str,
+        vol.Optional(
+            CONF_SYSTEM_PROMPT, default=defaults.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT)
+        ): str,
+        vol.Optional(CONF_STT_MODEL, default=defaults.get(CONF_STT_MODEL, DEFAULT_STT_MODEL)): str,
+        vol.Optional(CONF_TTS_MODEL, default=defaults.get(CONF_TTS_MODEL, DEFAULT_TTS_MODEL)): str,
+        vol.Optional(CONF_TTS_VOICE, default=defaults.get(CONF_TTS_VOICE, DEFAULT_TTS_VOICE)): str,
+    })
+
+
+def _validate_agent(user_input: dict) -> dict:
+    errors = {}
+    if user_input.get(CONF_ENABLE_AGENT):
+        required = {
+            CONF_TELEGRAM_BOT_TOKEN: 'telegram_bot_token_required',
+            CONF_TELEGRAM_ALLOWED_CHAT_IDS: 'telegram_allowed_chat_ids_required',
+            CONF_LLM_API_KEY: 'llm_api_key_required',
+        }
+        for field, error_key in required.items():
+            if not user_input.get(field):
+                errors[field] = error_key
+    return errors
+
+
 class HapyAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    def __init__(self):
+        self._repo_data: dict[str, Any] = {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
             errors = _validate(user_input)
             if not errors:
-                data = dict(user_input)
-                if data.get(CONF_ENABLE_WEBHOOK):
-                    data[CONF_WEBHOOK_ID] = secrets.token_hex(16)
+                self._repo_data = dict(user_input)
+                if self._repo_data.get(CONF_ENABLE_WEBHOOK):
+                    self._repo_data[CONF_WEBHOOK_ID] = secrets.token_hex(16)
+                return await self.async_step_agent()
+        return self.async_show_form(
+            step_id='user', data_schema=_base_schema(user_input or {}), errors=errors,
+        )
+
+    async def async_step_agent(self, user_input: dict[str, Any] | None = None):
+        # Everything here is optional and defaults to disabled — leaving
+        # it as-is (or just hitting submit) skips the agent entirely, it's
+        # not required to finish setting up the repo/reload half.
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            errors = _validate_agent(user_input)
+            if not errors:
+                data = {**self._repo_data, **user_input}
                 return self.async_create_entry(
-                    title=data[CONF_REPO_URL].rsplit('/', 1)[-1] or 'Hapy Automation',
+                    title=self._repo_data[CONF_REPO_URL].rsplit('/', 1)[-1] or 'Hapy Automation',
                     data=data,
                 )
         return self.async_show_form(
-            step_id='user', data_schema=_base_schema(user_input or {}), errors=errors,
+            step_id='agent', data_schema=_agent_schema(user_input or {}), errors=errors,
         )
 
     @staticmethod
@@ -109,6 +178,9 @@ class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
     # /api/config/config_entries/options/flow instead of just warning.
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_menu(step_id='init', menu_options=['repo', 'agent'])
+
+    async def async_step_repo(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         current = {**self.config_entry.data, **self.config_entry.options}
         if user_input is not None:
@@ -124,5 +196,19 @@ class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
                 )
                 return self.async_create_entry(title='', data={})
         return self.async_show_form(
-            step_id='init', data_schema=_base_schema(current), errors=errors,
+            step_id='repo', data_schema=_base_schema(current), errors=errors,
+        )
+
+    async def async_step_agent(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        current = {**self.config_entry.data, **self.config_entry.options}
+        if user_input is not None:
+            errors = _validate_agent(user_input)
+            if not errors:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data={**self.config_entry.data, **user_input}
+                )
+                return self.async_create_entry(title='', data={})
+        return self.async_show_form(
+            step_id='agent', data_schema=_agent_schema(current), errors=errors,
         )

@@ -92,6 +92,7 @@ class HapyCoordinator:
         self._unsub_state = None
         self._unsub_zha = None
         self._paths_ready = False
+        self.agent_runner = None  # set by __init__.py if CONF_ENABLE_AGENT
 
         compat.install()
         models.set_hass(hass)

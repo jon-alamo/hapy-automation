@@ -15,17 +15,42 @@
           "dry_run": "Modo dry-run (no ejecuta acciones reales)",
           "enable_webhook": "Activar webhook para recarga instantánea"
         }
+      },
+      "agent": {
+        "title": "Agente conversacional (opcional)",
+        "description": "Déjalo todo en blanco / desactivado para omitir esta parte. Requiere una deploy key con permiso de escritura si quieres que el agente haga commit/push.",
+        "data": {
+          "enable_agent": "Activar agente conversacional",
+          "telegram_bot_token": "Token del bot de Telegram (@BotFather)",
+          "telegram_allowed_chat_ids": "chat_id autorizados (separados por comas)",
+          "llm_api_base_url": "URL base de la API (compatible OpenAI)",
+          "llm_api_key": "API key",
+          "llm_model": "Modelo de chat",
+          "system_prompt": "System prompt",
+          "stt_model": "Modelo de transcripción (voz→texto)",
+          "tts_model": "Modelo de síntesis (texto→voz)",
+          "tts_voice": "Voz"
+        }
       }
     },
     "error": {
       "ssh_key_path_required": "Indica la ruta a la deploy key SSH.",
       "ssh_key_path_not_found": "No se encuentra un fichero en esa ruta.",
-      "pat_required": "Indica un token de acceso personal."
+      "pat_required": "Indica un token de acceso personal.",
+      "telegram_bot_token_required": "Indica el token del bot de Telegram.",
+      "telegram_allowed_chat_ids_required": "Indica al menos un chat_id autorizado.",
+      "llm_api_key_required": "Indica la API key del LLM."
     }
   },
   "options": {
     "step": {
       "init": {
+        "menu_options": {
+          "repo": "Repositorio y recarga",
+          "agent": "Agente conversacional"
+        }
+      },
+      "repo": {
         "data": {
           "repo_url": "URL del repositorio (SSH o HTTPS)",
           "branch": "Rama",
@@ -36,6 +61,20 @@
           "poll_interval_minutes": "Intervalo de sondeo (minutos)",
           "dry_run": "Modo dry-run (no ejecuta acciones reales)",
           "enable_webhook": "Activar webhook para recarga instantánea"
+        }
+      },
+      "agent": {
+        "data": {
+          "enable_agent": "Activar agente conversacional",
+          "telegram_bot_token": "Token del bot de Telegram (@BotFather)",
+          "telegram_allowed_chat_ids": "chat_id autorizados (separados por comas)",
+          "llm_api_base_url": "URL base de la API (compatible OpenAI)",
+          "llm_api_key": "API key",
+          "llm_model": "Modelo de chat",
+          "system_prompt": "System prompt",
+          "stt_model": "Modelo de transcripción (voz→texto)",
+          "tts_model": "Modelo de síntesis (texto→voz)",
+          "tts_voice": "Voz"
         }
       }
     }

@@ -13,6 +13,7 @@ from homeassistant.components import webhook
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_ENABLE_AGENT,
     CONF_ENABLE_WEBHOOK,
     CONF_WEBHOOK_ID,
     DOMAIN,
@@ -47,6 +48,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass, DOMAIN, 'Hapy Automation reload', entry.data[CONF_WEBHOOK_ID], _handle_webhook
         )
 
+    if entry.data.get(CONF_ENABLE_AGENT):
+        from .agent.runner import AgentRunner  # local import: aiohttp-heavy, only needed if enabled
+        coordinator.agent_runner = AgentRunner(hass, entry, coordinator)
+        coordinator.agent_runner.start()
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _async_register_services(hass)
     return True
@@ -54,6 +60,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator: HapyCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if getattr(coordinator, 'agent_runner', None) is not None:
+        await coordinator.agent_runner.stop()
     await coordinator.async_stop()
 
     if entry.data.get(CONF_WEBHOOK_ID):
