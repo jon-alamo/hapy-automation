@@ -100,7 +100,14 @@ def service_call(fcn):
     @wraps(fcn)
     def wrapper(self, *args, **kwargs):
         kwargs['entity_id'] = self.entity_id
-        service_name = fcn.__name__
+        # A generated method's Python name isn't always the real Home
+        # Assistant service name — e.g. a service literally called
+        # `import` (the `blueprint` domain has one) can't be a Python
+        # method name at all, so the generator names it `import_` and
+        # records the real name in `_hapy_service_names` for exactly
+        # this lookup. See runtime/generators/domains.py.
+        overrides = getattr(type(self), '_hapy_service_names', None) or {}
+        service_name = overrides.get(fcn.__name__, fcn.__name__)
         return self.instance.call_service(
             domain=self.domain_name, service=service_name, data=kwargs
         )

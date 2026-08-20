@@ -18,7 +18,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from homeassistant.core import HomeAssistant, Event
+from homeassistant.core import HomeAssistant, Event, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.dispatcher import async_dispatcher_send, dispatcher_send
 from homeassistant.helpers.event import async_track_time_interval
@@ -304,9 +304,21 @@ class HapyCoordinator:
 
     # -- event bridge --------------------------------------------------
 
+    @callback
     def _on_state_changed(self, event: Event) -> None:
+        # Without @callback, Home Assistant's event bus treats this as a
+        # blocking sync function and dispatches it via the executor (a
+        # worker thread) instead of calling it directly on the event
+        # loop. async_add_executor_job() below is itself only safe to
+        # call FROM the loop (it does asyncio.current_task() internally)
+        # — called from that other worker thread instead, it fails with
+        # "RuntimeError: no running event loop". Found for real: this hit
+        # on every single state_changed event, hundreds of times a
+        # minute on a busy instance, effectively breaking automation
+        # dispatch almost entirely.
         self.hass.async_add_executor_job(self._process_state_changed, dict(event.data))
 
+    @callback
     def _on_zha_event(self, event: Event) -> None:
         self.hass.async_add_executor_job(self._process_zha_event, dict(event.data))
 
