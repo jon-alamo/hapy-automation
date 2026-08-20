@@ -25,6 +25,30 @@ _discovery_state = threading.local()
 _hass = None  # set once via set_hass() during async_setup_entry
 _dry_run = False
 
+# EntityHandler/DeviceHandler.track_access below are plain process-global
+# dicts (ported as-is from hapy/models.py) — harmless in the original
+# system, where binding discovery only ever ran as a blocking step in a
+# single-threaded WS event loop. Here, a reload's binding discovery and
+# live automation execution both run via hass.async_add_executor_job on a
+# shared thread pool, genuinely concurrently on a busy real instance —
+# and every single Entity/Device class attribute access unconditionally
+# writes into track_access (see EntityHandler.__getattribute__ below).
+# Found for real on the Pi: a reload running concurrently with live
+# traffic bound an automation to unrelated entities that happened to be
+# touched by other automations' real execution at the same moment.
+# RUNTIME_LOCK serializes anything that touches Entity/Device classes —
+# reload's reimport+binding-discovery pass, per-event condition checks,
+# and each running Automation's action()/exit_condition() calls — against
+# each other, so a binding-discovery window is never polluted. This is a
+# blunt fix (it also serializes concurrently "active" automations against
+# each other, e.g. two held-down dimmer buttons in different rooms, where
+# the original threading.Thread-per-automation design intended real
+# concurrency) traded deliberately for correctness under this session's
+# time constraints; making track_access properly thread-local instead
+# (like _discovery_state above) would restore that concurrency and is the
+# better long-term fix.
+RUNTIME_LOCK = threading.Lock()
+
 
 def set_hass(hass):
     global _hass

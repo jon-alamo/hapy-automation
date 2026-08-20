@@ -226,34 +226,35 @@ class HapyCoordinator:
         the whole reload lands, or nothing about the running automations
         changes at all."""
         purge_names = self._purge_names()
-        old_modules = {name: sys.modules[name] for name in purge_names if name in sys.modules}
-        old_automations = dict(AutomationHandler.automations)
-        old_bindings = dict(AutomationHandler.automation_bindings)
-        old_entities = dict(models.EntityHandler.entities)
-        old_devices = dict(models.DeviceHandler.devices)
+        with models.RUNTIME_LOCK:
+            old_modules = {name: sys.modules[name] for name in purge_names if name in sys.modules}
+            old_automations = dict(AutomationHandler.automations)
+            old_bindings = dict(AutomationHandler.automation_bindings)
+            old_entities = dict(models.EntityHandler.entities)
+            old_devices = dict(models.DeviceHandler.devices)
 
-        for name in purge_names:
-            sys.modules.pop(name, None)
-
-        AutomationHandler.reset_automations()
-        models.EntityHandler.entities = {}
-        models.DeviceHandler.devices = {}
-
-        try:
-            importlib.import_module('entities')
-            importlib.import_module('devices')
-            importlib.import_module('domains')
-            importlib.import_module(_AUTOMATIONS_MODULE_NAME)
-            models.EntityHandler.read_states()
-        except Exception:
             for name in purge_names:
                 sys.modules.pop(name, None)
-            sys.modules.update(old_modules)
-            AutomationHandler.automations = old_automations
-            AutomationHandler.automation_bindings = old_bindings
-            models.EntityHandler.entities = old_entities
-            models.DeviceHandler.devices = old_devices
-            raise
+
+            AutomationHandler.reset_automations()
+            models.EntityHandler.entities = {}
+            models.DeviceHandler.devices = {}
+
+            try:
+                importlib.import_module('entities')
+                importlib.import_module('devices')
+                importlib.import_module('domains')
+                importlib.import_module(_AUTOMATIONS_MODULE_NAME)
+                models.EntityHandler.read_states()
+            except Exception:
+                for name in purge_names:
+                    sys.modules.pop(name, None)
+                sys.modules.update(old_modules)
+                AutomationHandler.automations = old_automations
+                AutomationHandler.automation_bindings = old_bindings
+                models.EntityHandler.entities = old_entities
+                models.DeviceHandler.devices = old_devices
+                raise
 
     def _purge_names(self) -> list[str]:
         names = []
@@ -278,25 +279,27 @@ class HapyCoordinator:
         self.hass.async_add_executor_job(self._process_zha_event, dict(event.data))
 
     def _process_state_changed(self, data: dict) -> None:
-        entity_id = data.get('entity_id')
-        entity = models.EntityHandler.entities.get(entity_id)
-        if entity:
-            new_state = data.get('new_state')
-            old_state = data.get('old_state')
-            AutomationHandler.register_change(entity)
-            entity.state.set_from_state_event({
-                'new_state': new_state.as_dict() if hasattr(new_state, 'as_dict') else new_state,
-                'old_state': old_state.as_dict() if hasattr(old_state, 'as_dict') else old_state,
-            })
-        self._run_automation_cycle()
+        with models.RUNTIME_LOCK:
+            entity_id = data.get('entity_id')
+            entity = models.EntityHandler.entities.get(entity_id)
+            if entity:
+                new_state = data.get('new_state')
+                old_state = data.get('old_state')
+                AutomationHandler.register_change(entity)
+                entity.state.set_from_state_event({
+                    'new_state': new_state.as_dict() if hasattr(new_state, 'as_dict') else new_state,
+                    'old_state': old_state.as_dict() if hasattr(old_state, 'as_dict') else old_state,
+                })
+            self._run_automation_cycle()
 
     def _process_zha_event(self, data: dict) -> None:
-        device_id = data.get('device_id')
-        device = models.DeviceHandler.devices.get(device_id)
-        if device and device.quirk is not None:
-            AutomationHandler.register_change(device)
-            device.handle_action_data(data)
-        self._run_automation_cycle()
+        with models.RUNTIME_LOCK:
+            device_id = data.get('device_id')
+            device = models.DeviceHandler.devices.get(device_id)
+            if device and device.quirk is not None:
+                AutomationHandler.register_change(device)
+                device.handle_action_data(data)
+            self._run_automation_cycle()
 
     def _run_automation_cycle(self) -> None:
         AutomationHandler.handle_exit_conditions()

@@ -63,6 +63,17 @@ ALWAYS_INCLUDED_DOMAINS = frozenset(
         "input_datetime",
         "scene",
         "script",
+        # Low-cardinality singleton-ish domains (typically one `sun.sun`,
+        # a handful of zones/persons per household) that automations
+        # reference directly for presence/daylight state — found for real
+        # on the Pi: entities.SunSun/ZoneHome missing broke
+        # automations/general.py and climate.py. Unlike sensor/
+        # binary_sensor/device_tracker (which can number in the hundreds
+        # and is exactly what the `_hapy` curation exists for), there's no
+        # entity-flood risk from including these wholesale.
+        "sun",
+        "zone",
+        "person",
     }
 )
 

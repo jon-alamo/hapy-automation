@@ -144,12 +144,23 @@ class Automation(metaclass=AutomationHandler):
         return time.time() - t0 > self.timeout
 
     def run(self):
-        self.action()
+        # Locked only around action()/exit_condition() — never around the
+        # step_time sleep below — so a running automation's poll loop
+        # doesn't stall reload or other automations for its whole
+        # lifetime, only for each brief condition check/action call. See
+        # models.RUNTIME_LOCK's docstring for why this locking exists at
+        # all: these calls touch Entity/Device classes the same way
+        # binding discovery does.
+        with models.RUNTIME_LOCK:
+            self.action()
         t0 = time.time()
         loops = 0
-        while not self.exit_condition():
-            loops += 1
-            self.action()
+        while True:
+            with models.RUNTIME_LOCK:
+                if self.exit_condition():
+                    break
+                loops += 1
+                self.action()
             time.sleep(self.step_time)
             if self.is_time_out(t0):
                 logger.debug('[AUTOMATIONS] %s timed out.', self.__class__.__name__)
