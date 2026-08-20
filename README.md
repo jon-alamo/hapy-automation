@@ -56,8 +56,8 @@ The config flow asks for:
 |---|---|
 | Repository URL | SSH (`git@github.com:you/your-automations.git`) or HTTPS |
 | Branch | Defaults to `main` |
-| Auth method | `ssh_key`, `personal_access_token`, or `none` for a public repo |
-| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`). Generate one yourself and add the public half as a **deploy key** on your repository — this integration never generates or stores keys for you. **Read-only is enough** if the repo already has an `automations/` package; give the deploy key **write access** if you want an empty repo auto-scaffolded (see below), or if you'll enable the conversational agent's `git_commit_and_push`. |
+| Auth method | `ssh_key`, `ssh_key_generate`, `personal_access_token`, or `none` for a public repo |
+| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`) — generate one yourself and add the public half as a **deploy key** on your repository. **Read-only is enough** if the repo already has an `automations/` package; give the deploy key **write access** if you want an empty repo auto-scaffolded (see below), or if you'll enable the conversational agent's `git_commit_and_push`. |
 | Personal access token | For `personal_access_token`: a token with read access to the repo — **write access too** for the same auto-scaffold/agent-push cases as above |
 | Entity include pattern | Regex; see **Entity filtering** below |
 | Poll interval (minutes) | How often to check the repo for new commits (default 1) |
@@ -65,6 +65,14 @@ The config flow asks for:
 | Enable webhook | Registers a Home Assistant webhook for near-instant reload on push, in addition to polling |
 
 All of these can be changed later from the integration's **Configure** options.
+
+Don't want to SSH into your Home Assistant host to run `ssh-keygen` by hand?
+Pick **`ssh_key_generate`** as the auth method instead of `ssh_key` — the
+integration generates an ed25519 keypair itself under `/config/.ssh/`, then
+shows you the public half on screen to paste into your repo's deploy keys
+before you continue the flow. Re-running setup for the same repo reuses the
+same key rather than generating a new one and orphaning the one you already
+added on GitHub.
 
 ### Dry run
 
