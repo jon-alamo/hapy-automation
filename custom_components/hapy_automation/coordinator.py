@@ -202,8 +202,19 @@ class HapyCoordinator:
     def _ensure_sys_path(self) -> None:
         if self._paths_ready:
             return
-        for path in (self.generated_path, self.repo_path):
+        # generated_path must end up ahead of repo_path on sys.path:
+        # `import entities`/`devices`/`domains` need to resolve to the
+        # freshly-generated modules here, not to any same-named files the
+        # user's repo happens to have committed (e.g. home-automations
+        # ships its own checked-in entities.py/devices.py/domains.py from
+        # the old system, which `import hapy.models` and would shadow
+        # ours if it won. Insert repo_path first so generated_path's
+        # later insert(0, ...) ends up in front of it.
+        for path in (self.repo_path, self.generated_path):
             if path not in sys.path:
+                sys.path.insert(0, path)
+            else:
+                sys.path.remove(path)
                 sys.path.insert(0, path)
         self._paths_ready = True
 
