@@ -48,8 +48,8 @@ The config flow asks for:
 | Repository URL | SSH (`git@github.com:you/your-automations.git`) or HTTPS |
 | Branch | Defaults to `main` |
 | Auth method | `ssh_key`, `personal_access_token`, or `none` for a public repo |
-| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`). Generate one yourself and add the public half as a **deploy key** (read-only) on your repository — this integration never generates or stores keys for you. |
-| Personal access token | For `personal_access_token`: a token with read access to the repo |
+| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`). Generate one yourself and add the public half as a **deploy key** on your repository — this integration never generates or stores keys for you. **Read-only is enough** if the repo already has an `automations/` package; give the deploy key **write access** if you want an empty repo auto-scaffolded (see below), or if you'll enable the conversational agent's `git_commit_and_push`. |
+| Personal access token | For `personal_access_token`: a token with read access to the repo — **write access too** for the same auto-scaffold/agent-push cases as above |
 | Entity include pattern | Regex; see **Entity filtering** below |
 | Poll interval (minutes) | How often to check the repo for new commits (default 1) |
 | Dry run | See below (default **on**) |
@@ -66,6 +66,22 @@ imported and bound, and `init_condition()` is evaluated on every real event —
 `entities.X.services.turn_on(...)` etc. are logged instead of executed. Use
 this to verify your repository loads cleanly and automations bind to what you
 expect (check the diagnostic sensors below) before flipping it off.
+
+### Empty repo → auto-scaffold
+
+You can point this integration at a brand-new, completely empty GitHub repo.
+If reload doesn't find an `automations/__init__.py` in it, it writes a
+minimal starter package itself (a docstring showing the API, ready for your
+own modules) and **pushes that commit itself**, then proceeds normally. A
+repo that already has an `automations/` package is left completely
+untouched — this only ever happens once, the first time.
+
+**This requires write access on whatever credentials you configured**
+(deploy key or personal access token) — a read-only key works fine for
+day-to-day reload of an already-populated repo, but can't push the initial
+scaffold to an empty one. If you don't want to grant write access, just
+create the `automations/` package (with an empty `__init__.py`) yourself
+before pointing the integration at the repo, and read-only stays enough.
 
 ### Entity filtering
 
