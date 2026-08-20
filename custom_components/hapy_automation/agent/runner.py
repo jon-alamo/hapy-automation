@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from ..const import (
     AGENT_MAX_ITERATIONS,
     AGENT_MAX_SECONDS,
+    CONF_LANGUAGE,
     CONF_LLM_API_BASE_URL,
     CONF_LLM_API_KEY,
     CONF_LLM_MODEL,
@@ -23,10 +24,12 @@ from ..const import (
     CONF_TELEGRAM_BOT_TOKEN,
     CONF_TTS_MODEL,
     CONF_TTS_VOICE,
+    DEFAULT_LANGUAGE,
     DEFAULT_STT_MODEL,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TTS_MODEL,
     DEFAULT_TTS_VOICE,
+    LANGUAGE_NAMES,
     TELEGRAM_POLL_TIMEOUT,
 )
 from .llm_client import LLMClient
@@ -76,8 +79,26 @@ class AgentRunner:
         self._offset: int | None = None
         self._task: asyncio.Task | None = None
 
+    def _language(self) -> str:
+        return self.entry.data.get(CONF_LANGUAGE) or DEFAULT_LANGUAGE
+
     def _system_prompt(self) -> str:
-        return self.entry.data.get(CONF_SYSTEM_PROMPT) or DEFAULT_SYSTEM_PROMPT
+        base = self.entry.data.get(CONF_SYSTEM_PROMPT) or DEFAULT_SYSTEM_PROMPT
+        language = self._language()
+        language_name = LANGUAGE_NAMES.get(language, language)
+        # Appended, not baked into the editable prompt field itself, so
+        # changing `language` always takes effect even if the user has
+        # customized system_prompt and forgotten to update it there too.
+        # Explicit and unconditional on purpose — found for real: without
+        # this, replies drifted into whatever language the model guessed
+        # from the (sometimes mis-transcribed) input, which then also
+        # made the TTS voice mispronounce everything.
+        directive = (
+            f"\n\nResponde SIEMPRE en {language_name} ({language}), "
+            "sin excepción, sea cual sea el idioma en el que te escriban "
+            "o hablen — nunca cambies de idioma a mitad de conversación."
+        )
+        return base + directive
 
     def start(self) -> None:
         self._task = self.hass.async_create_background_task(
@@ -142,7 +163,7 @@ class AgentRunner:
         is_voice = 'voice' in message
         if is_voice:
             ogg_bytes = await self.telegram.download_file(message['voice']['file_id'])
-            text = await self.llm.transcribe(ogg_bytes)
+            text = await self.llm.transcribe(ogg_bytes, language=self._language())
             if text is None:
                 await self.telegram.send_message(
                     chat_id, 'No he podido transcribir el audio — ¿puedes escribirlo?'

@@ -55,12 +55,19 @@ class LLMClient:
                 raise RuntimeError(f"LLM chat completion failed ({resp.status}): {data}")
         return data["choices"][0]["message"]
 
-    async def transcribe(self, ogg_bytes: bytes) -> str | None:
+    async def transcribe(self, ogg_bytes: bytes, language: str | None = None) -> str | None:
         """Best-effort speech-to-text. Returns None if the endpoint
         doesn't support it or the call fails, rather than raising —
-        callers should fall back to asking the user to type instead."""
+        callers should fall back to asking the user to type instead.
+
+        `language` (ISO-639-1, e.g. "es") pins the expected language
+        instead of letting Whisper auto-detect it — without this, a
+        short or accented recording can get mis-detected, which then
+        cascades into the LLM replying in the wrong language too."""
         form = aiohttp.FormData()
         form.add_field("model", self.stt_model)
+        if language:
+            form.add_field("language", language)
         form.add_field(
             "file", ogg_bytes, filename="voice.ogg", content_type="audio/ogg"
         )

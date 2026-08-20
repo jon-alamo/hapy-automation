@@ -104,10 +104,25 @@ CONF_SYSTEM_PROMPT = "system_prompt"
 CONF_STT_MODEL = "stt_model"
 CONF_TTS_MODEL = "tts_model"
 CONF_TTS_VOICE = "tts_voice"
+CONF_LANGUAGE = "language"
 
 DEFAULT_ENABLE_AGENT = False
 DEFAULT_LLM_API_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_LLM_MODEL = "gpt-4o-mini"
+DEFAULT_LANGUAGE = "es"
+
+# ISO-639-1 -> human name, for the language directive appended to the
+# system prompt. Falls back to the raw code for anything not listed here
+# (still a valid Whisper `language` hint either way).
+LANGUAGE_NAMES = {
+    "es": "español",
+    "en": "English",
+    "ca": "català",
+    "fr": "français",
+    "de": "Deutsch",
+    "it": "italiano",
+    "pt": "português",
+}
 DEFAULT_STT_MODEL = "whisper-1"
 DEFAULT_TTS_MODEL = "tts-1"
 DEFAULT_TTS_VOICE = "alloy"

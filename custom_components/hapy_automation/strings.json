@@ -29,7 +29,8 @@
           "system_prompt": "System prompt",
           "stt_model": "Modelo de transcripción (voz→texto)",
           "tts_model": "Modelo de síntesis (texto→voz)",
-          "tts_voice": "Voz"
+          "tts_voice": "Voz",
+          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
         }
       }
     },
@@ -74,7 +75,8 @@
           "system_prompt": "System prompt",
           "stt_model": "Modelo de transcripción (voz→texto)",
           "tts_model": "Modelo de síntesis (texto→voz)",
-          "tts_voice": "Voz"
+          "tts_voice": "Voz",
+          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
         }
       }
     }

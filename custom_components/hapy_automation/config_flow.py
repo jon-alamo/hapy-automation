@@ -23,6 +23,7 @@ from .const import (
     CONF_ENABLE_AGENT,
     CONF_ENABLE_WEBHOOK,
     CONF_ENTITY_INCLUDE_PATTERN,
+    CONF_LANGUAGE,
     CONF_LLM_API_BASE_URL,
     CONF_LLM_API_KEY,
     CONF_LLM_MODEL,
@@ -42,6 +43,7 @@ from .const import (
     DEFAULT_ENABLE_AGENT,
     DEFAULT_ENABLE_WEBHOOK,
     DEFAULT_ENTITY_INCLUDE_PATTERN,
+    DEFAULT_LANGUAGE,
     DEFAULT_LLM_API_BASE_URL,
     DEFAULT_LLM_MODEL,
     DEFAULT_POLL_INTERVAL_MINUTES,
@@ -110,6 +112,9 @@ def _agent_schema(defaults: dict) -> vol.Schema:
         vol.Optional(CONF_STT_MODEL, default=defaults.get(CONF_STT_MODEL, DEFAULT_STT_MODEL)): str,
         vol.Optional(CONF_TTS_MODEL, default=defaults.get(CONF_TTS_MODEL, DEFAULT_TTS_MODEL)): str,
         vol.Optional(CONF_TTS_VOICE, default=defaults.get(CONF_TTS_VOICE, DEFAULT_TTS_VOICE)): str,
+        vol.Optional(
+            CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
+        ): str,
     })
 
 
