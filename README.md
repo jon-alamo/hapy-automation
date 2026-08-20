@@ -103,7 +103,16 @@ Each configured repo gets:
 - `button.<repo>_hapy_automation_reload_now` — force an immediate reload.
 
 Check the current-commit sensor against your repo's actual HEAD, not just the
-absence of errors in the log, when you want to confirm a push really landed.
+absence of errors in the log, when you want to confirm a push really landed —
+these sensors are the source of truth, not the log. If your instance sets a
+restrictive default log level (e.g. `logger: default: critical` in
+`configuration.yaml`), this integration's own log lines — including real
+errors — will be silently suppressed and you won't see them even though
+something did go wrong; the diagnostic sensors above don't depend on log
+level at all. To see the logs anyway for troubleshooting, call
+`logger.set_level` with `custom_components.hapy_automation: debug` (Developer
+Tools → Actions, or the `logger.set_level` service) — this resets on every
+Home Assistant restart.
 
 ## Services
 

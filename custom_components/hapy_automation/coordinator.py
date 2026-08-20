@@ -118,6 +118,7 @@ class HapyCoordinator:
         self._unsub_timer = self._unsub_state = self._unsub_zha = None
 
     async def _async_poll(self, _now) -> None:
+        logger.debug('[hapy_automation] poll tick at %s', _now)
         await self.async_reload()
 
     # -- reload -------------------------------------------------------------
