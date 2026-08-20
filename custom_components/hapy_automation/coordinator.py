@@ -43,6 +43,7 @@ from .const import (
     ZHA_EVENT_TYPE,
 )
 from .git_manager import GitManager, GitOperationError
+from .scaffold import write_scaffold
 from .runtime import compat, models
 from .runtime.automations import AutomationHandler
 from .runtime.generators import devices as devices_gen
@@ -131,6 +132,12 @@ class HapyCoordinator:
     async def _async_reload_locked(self, force: bool) -> ReloadResult:
         try:
             await self.hass.async_add_executor_job(self.git.ensure_cloned)
+            scaffolded = await self.hass.async_add_executor_job(self._maybe_scaffold_repo)
+            if scaffolded:
+                # A brand-new commit we just pushed ourselves — always do
+                # a real reload pass for it, not just a "nothing changed"
+                # no-op (there was nothing here to compare against yet).
+                force = True
             remote_sha = await self.hass.async_add_executor_job(self.git.fetch_remote_sha)
         except GitOperationError as e:
             self._record_failure(str(e))
@@ -191,6 +198,29 @@ class HapyCoordinator:
         self.last_reload_at = datetime.now(timezone.utc)
         async_dispatcher_send(self.hass, SIGNAL_RELOAD_COMPLETE)
         logger.error('[hapy_automation] reload failed: %s', error)
+
+    # -- repo scaffolding (blocking, executor-only) -------------------------
+
+    def _maybe_scaffold_repo(self) -> bool:
+        """If the configured repo/branch has no automations/ package yet
+        (a brand-new empty repo, most commonly), write a minimal starter
+        layout and push it — so pointing this integration at an empty
+        repo just works, instead of requiring the user to hand-create the
+        expected structure first. Returns True if a scaffold commit was
+        made. A repo that already has an automations/ package (the normal
+        case after the first run) is left completely untouched."""
+        self.git.ensure_branch_checked_out()
+        if self.git.has_automations_package():
+            return False
+        logger.info(
+            '[hapy_automation] %s (rama %s) no tiene automations/ — generando esqueleto inicial',
+            self.git.repo_url, self.git.branch,
+        )
+        write_scaffold(self.git.repo_path)
+        sha = self.git.commit_and_push('hapy_automation: scaffold inicial (automations/ vacío)')
+        if sha:
+            logger.info('[hapy_automation] esqueleto inicial empujado como %s', sha[:8])
+        return sha is not None
 
     # -- codegen / module (re)loading (blocking, executor-only) ------------
 

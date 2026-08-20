@@ -16,6 +16,7 @@ design (see plan doc, "Reload fiable"):
 """
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import shutil
@@ -81,11 +82,52 @@ class GitManager:
                 branch=self.branch,
                 env=self._git_env(),
             )
+            return
         except git.GitCommandError as e:
+            # A brand-new repo with no commits at all (or one that just
+            # doesn't have this branch yet) can't be cloned with an
+            # explicit --branch — git has nothing to check out. Fall back
+            # to a branch-less clone so async_reload's scaffolding step
+            # (see coordinator._maybe_scaffold_repo) can inspect it and
+            # create the branch/initial content itself, instead of this
+            # being a hard failure.
             shutil.rmtree(self.repo_path, ignore_errors=True)
-            raise GitOperationError(
-                f"No se pudo clonar {self.repo_url} (rama {self.branch}): {e}"
-            ) from e
+            os.makedirs(self.repo_path, exist_ok=True)
+            try:
+                git.Repo.clone_from(self._clone_url(), self.repo_path, env=self._git_env())
+            except git.GitCommandError as e2:
+                shutil.rmtree(self.repo_path, ignore_errors=True)
+                raise GitOperationError(
+                    f"No se pudo clonar {self.repo_url} (rama {self.branch}): {e2}"
+                ) from e2
+
+    def has_automations_package(self) -> bool:
+        return os.path.isfile(os.path.join(self.repo_path, 'automations', '__init__.py'))
+
+    def is_empty(self) -> bool:
+        """True if the local checkout has no commits at all — a freshly
+        created GitHub repo, before anything (even an initial README) was
+        ever pushed to it."""
+        try:
+            return not self._repo().head.is_valid()
+        except Exception:
+            return True
+
+    def ensure_branch_checked_out(self) -> None:
+        """After a branch-less clone (see ensure_cloned): make sure the
+        configured branch actually exists and is checked out locally,
+        creating it (from whatever's currently checked out, or as a fresh
+        root commit-less branch if the repo has no commits yet at all) if
+        it doesn't."""
+        repo = self._repo()
+        if repo.active_branch.name == self.branch:
+            return
+        with contextlib.suppress(Exception):
+            existing = [h.name for h in repo.heads]
+            if self.branch in existing:
+                repo.heads[self.branch].checkout()
+                return
+        repo.git.checkout('-b', self.branch)
 
     def _repo(self) -> git.Repo:
         return git.Repo(self.repo_path)
