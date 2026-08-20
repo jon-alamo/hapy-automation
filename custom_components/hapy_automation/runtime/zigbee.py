@@ -19,6 +19,32 @@ from . import helpers
 
 logger = logging.getLogger(__name__)
 
+_device_signatures_cache: dict | None = None
+_quirks_setup_done = False
+
+
+def invalidate_device_signatures_cache() -> None:
+    global _device_signatures_cache
+    _device_signatures_cache = None
+
+
+def _ensure_quirks_loaded(zhaquirks) -> None:
+    """zhaquirks.setup() walks and imports the entire zha-quirks package
+    tree (500+ modules) to populate zigpy's DEVICE_REGISTRY — it's
+    idempotent but not cheap (minutes on a Raspberry Pi). The original
+    hapy/generators/devices.py called it exactly once, at module import
+    time. Porting it into get_device_quirk() put the call inside the
+    per-device loop instead (generate_devices_module calls
+    get_device_quirk once per device — 110+ times for a real install),
+    which is what actually made reloads hang/take several minutes on real
+    hardware, not the also-real-but-smaller device_signatures cost fixed
+    above. Guard it so it only ever runs once per process."""
+    global _quirks_setup_done
+    if _quirks_setup_done:
+        return
+    zhaquirks.setup(zhaquirks.__path__[0])
+    _quirks_setup_done = True
+
 
 def _import_zigbee_stack():
     """Returns (zhaquirks, zigpy_quirks, zha_quirks_v2) or (None, None, None)
@@ -52,7 +78,7 @@ def get_device_quirk(manufacturer, model):
     if zhaquirks is None:
         return None, None
 
-    zhaquirks.setup(zhaquirks.__path__[0])
+    _ensure_quirks_loaded(zhaquirks)
     registry_v1 = zigpy_quirks.DEVICE_REGISTRY.registry_v1
     # registry_v2 was removed from newer zigpy releases; degrade gracefully
     # instead of crashing at import time if it's gone.
@@ -104,7 +130,23 @@ def build_device_signatures() -> dict:
     lookup. Some upstream quirk/builder modules ship with broken relative
     imports (a known zha-quirks packaging issue); skip those instead of
     letting one bad module abort generation for everyone. Returns {} if
-    ZHA isn't installed/loaded."""
+    ZHA isn't installed/loaded.
+
+    Cached process-wide after the first call: walking the entire
+    zhaquirks package tree (500+ modules) via importlib is slow — multiple
+    minutes on a Raspberry Pi — and this data only ever changes when the
+    zha-quirks package itself is upgraded, which only happens on a Home
+    Assistant update/restart, never between two reloads of an automations
+    repo. Rebuilding it on every single reload (as the original
+    hapy/register.py's register_signatures() did — there it was masked by
+    the `.registry` file's own persistent caching) made every reload
+    minutes slower than it needed to be for no benefit. Call
+    invalidate_device_signatures_cache() if this ever needs to be forced
+    to recompute within the same process."""
+    global _device_signatures_cache
+    if _device_signatures_cache is not None:
+        return _device_signatures_cache
+
     zhaquirks, _, _ = _import_zigbee_stack()
     if zhaquirks is None:
         return {}
@@ -142,4 +184,5 @@ def build_device_signatures() -> dict:
                         continue
                     device_title = helpers.get_device_title(*device_brand_names)
                     signatures[device_title] = [module_route, obj.__name__]
+    _device_signatures_cache = signatures
     return signatures
