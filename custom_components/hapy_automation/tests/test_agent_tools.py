@@ -55,3 +55,20 @@ def test_write_outside_repo_via_absolute_path_is_rejected():
             tools.dispatch("write_automation_file", {"path": "/etc/passwd", "content": "pwned"})
         ))
         assert "error" in result
+
+
+def test_get_automation_api_reference_returns_real_guide_content():
+    with tempfile.TemporaryDirectory() as repo_path:
+        tools = AgentTools(hass=FakeHass(), coordinator=FakeCoordinator(repo_path))
+
+        result = json.loads(asyncio.run(
+            tools.dispatch("get_automation_api_reference", {})
+        ))
+        assert "error" not in result
+        reference = result["reference"]
+        # Not just a smoke check that *some* string came back — confirm
+        # the actual API surface an automation author needs is in there.
+        assert "init_condition" in reference
+        assert "exit_condition" in reference
+        assert "entities.X.state.changed" in reference
+        assert "devices.X" in reference

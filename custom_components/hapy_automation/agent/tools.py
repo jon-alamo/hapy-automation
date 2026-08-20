@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 MAX_LIST_STATES_RESULTS = 100
 
+_API_REFERENCE_PATH = os.path.join(os.path.dirname(__file__), 'AUTOMATION_API_REFERENCE.md')
+
 
 class ToolError(Exception):
     """Message is safe to feed back to the LLM as the tool result."""
@@ -133,6 +135,19 @@ TOOL_SCHEMAS = [
         "function": {
             "name": "get_reload_status",
             "description": "Get the current reload status: commit SHA running, last reload ok/error.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_automation_api_reference",
+            "description": (
+                "Get the reference guide for the hapy.Automation authoring API "
+                "(class contract, entities.X/devices.X access patterns, binding "
+                "discovery caveats, repo layout conventions). Call this before "
+                "writing or editing automation code, not just from memory."
+            ),
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -265,3 +280,9 @@ class AgentTools:
             "last_reload_error": c.last_reload_error,
             "last_reload_at": c.last_reload_at.isoformat() if c.last_reload_at else None,
         }
+
+    async def _tool_get_automation_api_reference(self) -> dict:
+        def _read() -> str:
+            with open(_API_REFERENCE_PATH, 'r', encoding='utf-8') as f:
+                return f.read()
+        return {"reference": await self.hass.async_add_executor_job(_read)}
