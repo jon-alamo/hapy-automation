@@ -27,6 +27,19 @@ DEFAULT_ENABLE_WEBHOOK = False
 # filtered out by CONF_ENTITY_INCLUDE_PATTERN, matching the pre-existing
 # home-automations convention (light/switch/climate/etc. kept in full,
 # sensor/binary_sensor/device_tracker curated via the `_hapy` suffix).
+#
+# NOTE: this list is a reconstruction, not the original production
+# ENTITY_INCLUDE_PATTERN value (never found in either repo's .env — it
+# was set directly on the deploy host). The original filter was a single
+# regex applied uniformly to every entity_id, with no domain concept at
+# all; "actionable domains kept in full" was achieved by that regex
+# itself also matching those domains' entity_ids, not by separate logic.
+# Splitting it into pattern + hardcoded domain allowlist here means this
+# list can miss a domain the real pattern happened to cover — found for
+# real against production data (missing input_datetime broke automations
+# referencing entities.InputDatetimeOfficeAcOnTime). Treat additions to
+# this list as expected/normal as more gaps surface, not as bugs in the
+# splitting approach itself.
 ALWAYS_INCLUDED_DOMAINS = frozenset(
     {
         "light",
@@ -38,10 +51,16 @@ ALWAYS_INCLUDED_DOMAINS = frozenset(
         "media_player",
         "vacuum",
         "water_heater",
+        "humidifier",
+        "alarm_control_panel",
+        "siren",
+        "valve",
+        "select",
         "input_boolean",
         "input_number",
         "input_select",
         "input_text",
+        "input_datetime",
         "scene",
         "script",
     }
