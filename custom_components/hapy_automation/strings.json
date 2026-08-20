@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hapy Automation",
+        "description": "Conecta tu repo de automatizaciones Python.",
+        "data": {
+          "repo_url": "URL del repositorio (SSH o HTTPS)",
+          "branch": "Rama",
+          "auth_method": "Método de autenticación",
+          "ssh_key_path": "Ruta a la deploy key SSH (ej: /config/.ssh/id_ed25519)",
+          "personal_access_token": "Token de acceso personal (HTTPS)",
+          "entity_include_pattern": "Patrón regex de entidades a incluir (sensor/binary_sensor/device_tracker)",
+          "poll_interval_minutes": "Intervalo de sondeo (minutos)",
+          "dry_run": "Modo dry-run (no ejecuta acciones reales)",
+          "enable_webhook": "Activar webhook para recarga instantánea"
+        }
+      }
+    },
+    "error": {
+      "ssh_key_path_required": "Indica la ruta a la deploy key SSH.",
+      "ssh_key_path_not_found": "No se encuentra un fichero en esa ruta.",
+      "pat_required": "Indica un token de acceso personal."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "repo_url": "URL del repositorio (SSH o HTTPS)",
+          "branch": "Rama",
+          "auth_method": "Método de autenticación",
+          "ssh_key_path": "Ruta a la deploy key SSH",
+          "personal_access_token": "Token de acceso personal (HTTPS)",
+          "entity_include_pattern": "Patrón regex de entidades a incluir",
+          "poll_interval_minutes": "Intervalo de sondeo (minutos)",
+          "dry_run": "Modo dry-run (no ejecuta acciones reales)",
+          "enable_webhook": "Activar webhook para recarga instantánea"
+        }
+      }
+    }
+  }
+}

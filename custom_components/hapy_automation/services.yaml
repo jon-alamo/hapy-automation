@@ -1,0 +1,22 @@
+reload:
+  name: Reload
+  description: >-
+    Fuerza una recarga inmediata: git fetch + checkout + regeneración de
+    entities/devices/domains + reimportación de automations, con el mismo
+    rollback automático que la recarga periódica si algo falla.
+
+export_stubs:
+  name: Export stubs
+  description: >-
+    Vuelca los módulos entities.py/devices.py/domains.py generados en este
+    momento a una carpeta, para copiarlos a tu checkout local y tener
+    autocompletado en el IDE sin infraestructura aparte.
+  fields:
+    destination:
+      name: Destination
+      description: >-
+        Ruta absoluta donde volcar los ficheros. Por defecto
+        <config>/www/hapy_automation_stubs.
+      example: /config/www/hapy_automation_stubs
+      selector:
+        text:

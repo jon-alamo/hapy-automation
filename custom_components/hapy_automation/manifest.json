@@ -1,0 +1,15 @@
+{
+  "domain": "hapy_automation",
+  "name": "Hapy Automation",
+  "codeowners": ["@jon-alamo"],
+  "config_flow": true,
+  "dependencies": ["webhook"],
+  "after_dependencies": ["zha"],
+  "documentation": "https://github.com/jon-alamo/hapy-automation",
+  "issue_tracker": "https://github.com/jon-alamo/hapy-automation/issues",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "requirements": ["GitPython==3.1.58"],
+  "single_config_entry": false,
+  "version": "0.1.0"
+}

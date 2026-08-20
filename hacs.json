@@ -1,0 +1,7 @@
+{
+  "name": "Hapy Automation",
+  "render_readme": true,
+  "zip_release": false,
+  "filename": "hapy_automation.zip",
+  "homeassistant": "2024.1.0"
+}

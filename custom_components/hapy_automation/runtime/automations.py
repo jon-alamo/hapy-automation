@@ -1,0 +1,165 @@
+"""Automation base class + AutomationHandler — ported from hapy/automations.py.
+
+Scheduling/registration logic is pure Python and ported verbatim, including
+the metaclass-driven implicit registration+binding (`AutomationHandler.__new__`
+-> `make_bindings`) and the thread-per-active-automation execution model
+(`run_automations` spawns one `threading.Thread` per matched automation,
+`handle_exit_conditions`/`check_automations` drive the cycle every time an
+event is processed) — none of that depends on HA vs. the old WS transport.
+
+Two additions over the original:
+  - `AutomationHandler.dry_run`: when True, automations are still bound and
+    `init_condition()`/`exit_condition()` still evaluate for real, but no
+    Home Assistant service call actually goes out — see
+    runtime.models.HassBridge.call_service, which is where the no-op
+    actually happens (not here), so `action()` bodies run unmodified.
+  - `AutomationHandler.on_automation_fired`: callables invoked with the
+    automation name whenever run_automations() dispatches it, so the
+    integration's diagnostic sensor can show "last automation that would
+    have fired" without polling.
+"""
+import logging
+import threading
+import time
+
+from . import models
+
+logger = logging.getLogger(__name__)
+
+
+class AutomationHandler(type):
+    to_check_automations = []
+    to_run_automations = {}
+    running_automations = {}
+    automation_bindings = {}
+    automations = {}
+    dry_run = False
+    on_automation_fired = []
+    _base_class = None
+
+    @classmethod
+    def make_bindings(cls, new_class):
+        models.enter_discovery_mode()
+        try:
+            new_class().init_condition()
+        except Exception as e:
+            logger.warning(
+                '%s not bound to any entity or device due to init_condition error: %s.',
+                new_class.__name__, e,
+            )
+            return
+        finally:
+            models.exit_discovery_mode()
+        for entity_id in models.EntityHandler.track_access:
+            cls.automation_bindings.setdefault(entity_id, {})[new_class.get_id()] = new_class
+            logger.debug('[AUTOMATIONS] make_bindings: %s bound to %s.', new_class.__name__, entity_id)
+        for device_id in models.DeviceHandler.track_access:
+            cls.automation_bindings.setdefault(device_id, {})[new_class.get_id()] = new_class
+            logger.debug('[AUTOMATIONS] make_bindings: %s bound to %s.', new_class.__name__, device_id)
+        models.EntityHandler.reset_access()
+        models.DeviceHandler.reset_access()
+
+    def __new__(cls, classname, bases, class_dict):
+        new_class = type.__new__(cls, classname, bases, class_dict)
+        if cls._base_class is None and classname == 'Automation':
+            cls._base_class = new_class
+        else:
+            cls.automations[new_class.get_id()] = new_class
+        cls.make_bindings(new_class)
+        return new_class
+
+    @classmethod
+    def reset_automations(cls):
+        cls.automation_bindings = {}
+        cls.automations = {}
+
+    @classmethod
+    def handle_exit_conditions(cls):
+        for name in list(cls.running_automations.keys()):
+            automation = cls.running_automations[name]
+            if automation.exit_condition():
+                logger.debug('[AUTOMATIONS] handle_exit_conditions: %s leaving.', name)
+                automation.force_exit = True
+                cls.running_automations.pop(name)
+
+    @classmethod
+    def register_change(cls, item):
+        if item.id in cls.automation_bindings:
+            triggered = [
+                automation() for automation in cls.automation_bindings[item.id].values()
+            ]
+            cls.to_check_automations.extend(triggered)
+            logger.debug(
+                '[AUTOMATIONS] register_change: %s triggering %d checks.',
+                item.id, len(triggered),
+            )
+
+    @classmethod
+    def check_automations(cls):
+        cls.to_run_automations = {
+            automation.__class__.__name__: automation
+            for automation in cls.to_check_automations
+            if automation.init_condition()
+        }
+        cls.to_check_automations = []
+        if cls.to_run_automations:
+            logger.info(
+                '[AUTOMATIONS] check_automations: %d automations queued (%s).',
+                len(cls.to_run_automations), ', '.join(cls.to_run_automations),
+            )
+
+    @classmethod
+    def run_automations(cls):
+        for name, automation in cls.to_run_automations.items():
+            prefix = '[DRY RUN] ' if cls.dry_run else ''
+            logger.info('[AUTOMATIONS] %srun_automations: executing %s.', prefix, name)
+            cls.running_automations[name] = automation
+            thread = threading.Thread(target=automation.run, daemon=True)
+            thread.start()
+            for callback in cls.on_automation_fired:
+                try:
+                    callback(name)
+                except Exception:
+                    logger.exception('on_automation_fired callback failed for %s', name)
+        cls.to_run_automations = {}
+
+
+class Automation(metaclass=AutomationHandler):
+    step_time = 0.5
+    timeout = 10
+
+    def __init__(self):
+        self.force_exit = False
+
+    def action(self):
+        raise NotImplementedError('action method must be implemented')
+
+    def init_condition(self):
+        return False
+
+    def exit_condition(self):
+        return True
+
+    def is_time_out(self, t0):
+        return time.time() - t0 > self.timeout
+
+    def run(self):
+        self.action()
+        t0 = time.time()
+        loops = 0
+        while not self.exit_condition():
+            loops += 1
+            self.action()
+            time.sleep(self.step_time)
+            if self.is_time_out(t0):
+                logger.debug('[AUTOMATIONS] %s timed out.', self.__class__.__name__)
+                return
+            if self.force_exit:
+                logger.debug('[AUTOMATIONS] %s was forced to exit.', self.__class__.__name__)
+                return
+        times = 'once' if loops == 0 else f'{loops + 1} times'
+        logger.debug('[AUTOMATIONS] %s action triggered %s.', self.__class__.__name__, times)
+
+    @classmethod
+    def get_id(cls):
+        return '.'.join([cls.__module__, cls.__name__])
