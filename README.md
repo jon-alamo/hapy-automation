@@ -10,6 +10,15 @@ No separate container, no external service, no outbound connection to Home
 Assistant to maintain: the integration runs in-process, reads live state from
 `hass`, and reloads itself by polling (and optionally a webhook) your repo.
 
+**The repo is the single source of truth, and the integration doesn't care
+how it changes.** You editing and pushing by hand, a CI pipeline or script
+pushing automatically, and the built-in [conversational agent](#conversational-agent-optional)
+committing on your behalf are three ways of doing the exact same thing —
+writing to that git repository. Any commit that lands on the configured
+branch, from any of them, gets picked up on the next poll (or webhook) and
+reflected in the running automations, the same way, through the same
+reload-with-rollback path.
+
 ## How it works
 
 1. You point the integration at a git repository containing your automations,
@@ -141,12 +150,14 @@ Home Assistant restart.
 
 ## Conversational agent (optional)
 
-Talk to your automations over Telegram, in text or voice: an LLM (any
+One of the ways to edit your automations repo (see above) is to just ask for
+it: talk to your automations over Telegram, in text or voice, and an LLM (any
 OpenAI-compatible endpoint — OpenAI itself, or a self-hosted one) with tool
 access to your live Home Assistant state *and* to this repo can answer
 questions, and read/write/commit/push automation code on request, iterating
 with its tools until the request is actually done rather than answering in
-one shot.
+one shot. A commit it pushes is not treated any differently from one you
+pushed yourself or a script pushed on your behalf.
 
 Disabled by default. Enable it either during initial setup (a second,
 skippable "Agent" step right after the repo step) or later from
@@ -207,6 +218,11 @@ request is capped at 12 tool-call iterations / 120 seconds — past that the
 agent tells you it gave up instead of hanging.
 
 ## Writing automations
+
+Write and push these however you like — by hand, from a script/CI, or by
+asking the [conversational agent](#conversational-agent-optional) to do it
+for you; the integration reacts to commits on the branch, not to who or what
+made them.
 
 Your repository needs, at minimum, a top-level `automations` package —
 typically a directory with an `__init__.py` that imports every submodule
