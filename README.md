@@ -139,6 +139,73 @@ Home Assistant restart.
   checkout for IDE autocompletion. These files are never committed back to
   your repo automatically.
 
+## Conversational agent (optional)
+
+Talk to your automations over Telegram, in text or voice: an LLM (any
+OpenAI-compatible endpoint — OpenAI itself, or a self-hosted one) with tool
+access to your live Home Assistant state *and* to this repo can answer
+questions, and read/write/commit/push automation code on request, iterating
+with its tools until the request is actually done rather than answering in
+one shot.
+
+Disabled by default. Enable it either during initial setup (a second,
+skippable "Agent" step right after the repo step) or later from
+**Configure → Agente conversacional**.
+
+### Setup
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) on Telegram
+   (`/newbot`) — you get a bot token.
+2. Message your new bot once (anything), then find your numeric `chat_id`:
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` and look for
+   `"chat":{"id": ...}`.
+3. Fill in the agent step/options:
+
+| Field | Description |
+|---|---|
+| Enable agent | Off by default |
+| Telegram bot token | From @BotFather |
+| Allowed chat_ids | Comma-separated. **Required** — a bot token alone isn't access control; messages from any other chat_id are silently ignored |
+| LLM API base URL | e.g. `https://api.openai.com/v1`, or any OpenAI-compatible self-hosted endpoint |
+| LLM API key | |
+| LLM model | Any tool-calling-capable chat model, e.g. `gpt-4o-mini` |
+| System prompt | Editable, sensible default provided — see below |
+| Language | ISO-639-1 (default `es`) — pins both the expected speech-to-text language and the language the agent always replies in, regardless of what language it's addressed in |
+| STT / TTS model, TTS voice | Only used for voice messages; default to OpenAI's `whisper-1`/`tts-1`/`alloy`. Not every OpenAI-compatible backend implements the audio endpoints — if yours doesn't, voice input degrades to "please type instead" instead of failing silently |
+
+Changing the system prompt or language takes effect on the very next
+message — no restart or reload needed.
+
+### What it can do
+
+Text in → text out; voice in → voice out (transcribed, then replied to with
+a synthesized voice note). Tool access:
+
+- **Home Assistant, unrestricted**: `get_state`, `list_states` (domain/search
+  filtered), `call_service` — the whole instance, not just this repo's
+  entities.
+- **This repo's checkout, scoped and path-guarded**: `list_automation_files`,
+  `read_automation_file`, `write_automation_file`, `git_commit_and_push`
+  (stages everything, commits, pushes, then triggers a real reload and
+  reports back whether it actually succeeded — the agent checks this and
+  self-corrects before telling you it's done, same as it would for any other
+  reload). **Needs write access** on the configured deploy key/token, same
+  requirement as the empty-repo auto-scaffold above.
+- **`get_automation_api_reference`**: a bundled guide to the `hapy.Automation`
+  authoring API, which the default system prompt tells the agent to consult
+  before writing or editing code rather than relying on memory.
+- **`get_reload_status`**: same data as the diagnostic sensors.
+
+There's no separate dry-run gate for the agent's own pushes — the safety net
+is the same atomic reload-with-rollback every other push already goes
+through (see **Dry run** above for what that guarantees).
+
+Each Telegram chat gets its own conversation history (kept in memory, capped,
+lost on restart) and its own request queue, so messages in one chat are
+handled one at a time but different chats don't block each other. A single
+request is capped at 12 tool-call iterations / 120 seconds — past that the
+agent tells you it gave up instead of hanging.
+
 ## Writing automations
 
 Your repository needs, at minimum, a top-level `automations` package —
