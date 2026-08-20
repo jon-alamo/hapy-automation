@@ -39,6 +39,23 @@ class AutomationHandler(type):
 
     @classmethod
     def make_bindings(cls, new_class):
+        # Reset access-tracking BEFORE this pass, not just after it (the
+        # original hapy/automations.py only ever reset at the end too —
+        # found for real on the Pi: EntityHandler/DeviceHandler.
+        # __getattribute__ unconditionally records every Entity/Device
+        # attribute access, discovery mode or not, so ordinary automation
+        # execution between reloads (real init_condition()/action() calls
+        # responding to real events, for however long the process has
+        # been running) keeps writing into the same global track_access
+        # dicts that only ever got cleared at the end of the *previous*
+        # make_bindings() call. Whatever accumulated there in the meantime
+        # — hours of unrelated automation activity — silently became the
+        # very first automation's "bindings" on the next reload, without
+        # this reset. Observed directly: OnOfficeSwitchJoniOn (a pure
+        # device-trigger automation) ended up bound to a couple dozen
+        # unrelated entities from across the house.
+        models.EntityHandler.reset_access()
+        models.DeviceHandler.reset_access()
         models.enter_discovery_mode()
         try:
             new_class().init_condition()
