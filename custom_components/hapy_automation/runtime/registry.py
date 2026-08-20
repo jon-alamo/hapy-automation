@@ -9,6 +9,7 @@ state exactly and never accumulates entries for entities/devices that no
 longer exist — replacing hapy/register.py's `.registry` JSON file, which
 merged additively forever and never pruned (see plan doc, bug #5).
 """
+import enum
 import re
 
 from homeassistant.core import HomeAssistant
@@ -18,6 +19,28 @@ from homeassistant.helpers.service import async_get_all_descriptions
 
 from . import helpers
 from .zigbee import build_device_signatures
+
+
+def _json_safe(value):
+    """Recursively convert a state-attribute value into something whose
+    repr() is valid Python source. Real HA entity attributes routinely
+    carry live Python objects, not just JSON-ish primitives — e.g. a
+    light's `color_mode`/`supported_color_modes` are `ColorMode` enum
+    members and `supported_features` is an `IntFlag` — and repr() of
+    those (`<ColorMode.ONOFF: 'onoff'>`) is not valid Python, which broke
+    entities.py generation with a SyntaxError the first time this ran
+    against real live state (the old REST/WS-based generator never hit
+    this because REST responses are already JSON, so attributes arriving
+    that way are always plain str/int/float/bool/list/dict/None)."""
+    if isinstance(value, enum.Enum):
+        return value.value
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
 
 
 def entity_allowed(entity_id: str, pattern: str, always_included_domains) -> bool:
@@ -70,7 +93,7 @@ async def async_build_register(
         if not entity_allowed(entity_id, entity_include_pattern, always_included_domains):
             continue
         reg_entry = ent_reg.async_get(entity_id)
-        attributes = dict(state.attributes)
+        attributes = _json_safe(dict(state.attributes))
         attributes['last_changed'] = state.last_changed.isoformat()
         attributes['last_updated'] = state.last_updated.isoformat()
         attributes['state_value'] = state.state
