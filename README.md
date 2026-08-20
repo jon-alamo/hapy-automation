@@ -54,11 +54,11 @@ The config flow asks for:
 
 | Field | Description |
 |---|---|
-| Repository URL | SSH (`git@github.com:you/your-automations.git`) or HTTPS |
+| Repository URL | SSH (`git@github.com:you/your-automations.git`) or HTTPS — the format you pick here decides which authentication fields below actually matter, see **Authentication** |
 | Branch | Defaults to `main` |
-| Auth method | `ssh_key`, `ssh_key_generate`, `personal_access_token`, or `none` for a public repo |
-| SSH key path | For `ssh_key`: path to a private key file already placed under `/config/.ssh/` (e.g. `/config/.ssh/id_ed25519`) — generate one yourself and add the public half as a **deploy key** on your repository. **Read-only is enough** if the repo already has an `automations/` package; give the deploy key **write access** if you want an empty repo auto-scaffolded (see below), or if you'll enable the conversational agent's `git_commit_and_push`. |
-| Personal access token | For `personal_access_token`: a token with read access to the repo — **write access too** for the same auto-scaffold/agent-push cases as above |
+| Auth method | `ssh_key`, `ssh_key_generate`, `personal_access_token`, or `none` for a public repo — see **Authentication** |
+| SSH key path | Only used by `ssh_key` — see **Authentication** |
+| Personal access token | Only used by `personal_access_token` — see **Authentication** |
 | Entity include pattern | Regex; see **Entity filtering** below |
 | Poll interval (minutes) | How often to check the repo for new commits (default 1) |
 | Dry run | See below (default **on**) |
@@ -66,13 +66,28 @@ The config flow asks for:
 
 All of these can be changed later from the integration's **Configure** options.
 
-Don't want to SSH into your Home Assistant host to run `ssh-keygen` by hand?
-Pick **`ssh_key_generate`** as the auth method instead of `ssh_key` — the
-integration generates an ed25519 keypair itself under `/config/.ssh/`, then
-shows you the public half on screen to paste into your repo's deploy keys
-before you continue the flow. Re-running setup for the same repo reuses the
-same key rather than generating a new one and orphaning the one you already
-added on GitHub.
+### Authentication
+
+`Auth method` and `Repository URL`'s format (SSH vs HTTPS) together decide
+which one of the two credential fields is actually used — **only fill in the
+one that matches**, the other is ignored:
+
+| Auth method | Repository URL format | What you fill in | Where it comes from |
+|---|---|---|---|
+| `ssh_key` | SSH (`git@github.com:...`) | **SSH key path**: the filesystem path to a private key you already placed under `/config/.ssh/` | You generate it yourself (e.g. `ssh-keygen` from the SSH add-on, or reuse a key you already have), then add its **public** half as a **deploy key** on the GitHub repo |
+| `ssh_key_generate` | SSH (`git@github.com:...`) | Nothing — leave SSH key path empty | The integration generates the keypair itself and fills the path in automatically; it shows you the public key on screen so you paste it into the repo's deploy keys before continuing |
+| `personal_access_token` | HTTPS (`https://github.com/...`) | **Personal access token**: paste the token text directly | You create it yourself on GitHub → Settings → Developer settings → Personal access tokens (ideally *fine-grained*, scoped to just this repo) |
+| `none` | Either, but the repo must be public | Neither field | No credential needed — read-only, can't push (no auto-scaffold, no agent commits) |
+
+A **deploy key** (the `ssh_key`/`ssh_key_generate` path) is tied to that one
+repository only. A **personal access token** is tied to your GitHub account
+(unless you deliberately scope a fine-grained one to a single repo) — that's
+why SSH is the recommended default and listed first.
+
+**Read-only is enough** for either method if the repo already has an
+`automations/` package — day-to-day reload only ever needs to read. Give it
+**write access** instead if you want an empty repo auto-scaffolded (see
+below) or you'll enable the conversational agent's `git_commit_and_push`.
 
 ### Dry run
 
