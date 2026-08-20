@@ -43,7 +43,7 @@ from .const import (
     ZHA_EVENT_TYPE,
 )
 from .git_manager import GitManager, GitOperationError
-from .runtime import models
+from .runtime import compat, models
 from .runtime.automations import AutomationHandler
 from .runtime.generators import devices as devices_gen
 from .runtime.generators import domains as domains_gen
@@ -93,6 +93,7 @@ class HapyCoordinator:
         self._unsub_zha = None
         self._paths_ready = False
 
+        compat.install()
         models.set_hass(hass)
         models.set_dry_run(bool(data.get(CONF_DRY_RUN, True)))
         AutomationHandler.dry_run = bool(data.get(CONF_DRY_RUN, True))

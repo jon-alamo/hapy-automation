@@ -94,6 +94,14 @@ class DomainFactory(type):
         return type.__new__(cls, classname, bases, new_class_dict)
 
 
+class Domain(metaclass=DomainFactory):
+    def __init__(self, entity_id, state, instance):
+        self.instance = instance
+        self.entity_id = entity_id
+        self.state = state
+        self.domain_name = entity_id.split('.')[0]
+
+
 class HassBridge:
     """Thread-safe bridge from an Automation's worker thread back onto the
     Home Assistant event loop. Replaces hapy.homeassistant.HAInstance's
