@@ -42,6 +42,28 @@ logger = logging.getLogger(__name__)
 MAX_HISTORY_MESSAGES = 40
 
 
+def _safe_truncate_history(history: list[dict], max_len: int) -> list[dict]:
+    """A flat `history[-max_len:]` can cut in the middle of an
+    assistant(tool_calls) -> tool sequence, leaving a stored history that
+    *starts* with an orphaned `tool` message with no preceding tool_calls
+    to answer. The next turn then sends that straight to the LLM API,
+    which rejects the whole request outright — found for real via a
+    "messages with role 'tool' must be a response to a preceding message
+    with 'tool_calls'" 400 from OpenAI. A `user` message never has that
+    dependency (it always starts a fresh turn), so trim forward to the
+    first one at or after the naive cutoff instead of cutting blindly."""
+    if len(history) <= max_len:
+        return history
+    trimmed = history[-max_len:]
+    for i, message in enumerate(trimmed):
+        if message.get('role') == 'user':
+            return trimmed[i:]
+    # No user message anywhere in the window (pathological — a single
+    # turn alone exceeded max_len). Safer to drop it than send an
+    # unpaired tool message and get the whole request rejected.
+    return []
+
+
 def _parse_chat_ids(raw: str) -> set[int]:
     ids = set()
     for part in raw.split(','):
@@ -185,7 +207,7 @@ class AgentRunner:
             logger.exception('[hapy_automation agent] agent loop failed')
             await self.telegram.send_message(chat_id, f'Error del agente: {e}')
             return
-        self._histories[chat_id] = new_history[-MAX_HISTORY_MESSAGES:]
+        self._histories[chat_id] = _safe_truncate_history(new_history, MAX_HISTORY_MESSAGES)
 
         if is_voice:
             audio = await self.llm.synthesize(response_text)
