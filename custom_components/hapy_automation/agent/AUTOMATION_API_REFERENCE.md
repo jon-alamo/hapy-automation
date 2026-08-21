@@ -4,11 +4,48 @@ Referencia para el agente (y cualquier humano) antes de escribir o modificar
 código en el repo de automatizaciones. No es documentación de usuario del
 paso a paso de instalación — eso está en el README de `hapy-automation`.
 
+## Antes que nada: no es un framework genérico
+
+`hapy.Automation` **no** es algo que se instancie directamente ni que
+exponga métodos sueltos tipo `get_state()`/`call_service()`/`trigger()`. Si
+lo que estás a punto de escribir se parece a esto, está mal — es una API
+inventada, no la real:
+
+```python
+# ❌ MAL — esto no es hapy.Automation, no hace absolutamente nada
+from hapy import Automation
+
+automation = Automation()
+
+def set_water_heater_state(new_state):
+    economizer_state = automation.get_state('input_boolean.water_heater_energy_saving')
+    ...
+
+automation.trigger(input_boolean_entity_id='input_boolean.guest_mode', event='state_changed', callback=set_water_heater_state)
+```
+
+Esto falla en silencio de dos formas a la vez: `Automation` no tiene esos
+métodos (ni falta que hacen), y aunque los tuviera, un fichero así **nunca
+se ejecuta** porque no define ninguna subclase — no hay nada que el
+mecanismo de binding pueda descubrir. La forma correcta es una **subclase**
+de `hapy.Automation` con `init_condition()`/`action()`, ver la sección
+siguiente y el ejemplo completo más abajo.
+
 ## Estructura del repo
 
 - Un paquete `automations/` en la raíz, con un `__init__.py` que importa
   todos sus submódulos (`from .kitchen import *`, etc.) — así es como se
   descubren las automatizaciones, no hay registro manual en ningún sitio.
+  **Un módulo nuevo que no aparezca en `__init__.py` no se ejecuta nunca,
+  aunque su código sea perfecto** — no produce ningún error (el reload da
+  "ok" igualmente, porque no hay nada roto que falle: simplemente el
+  fichero no se toca), así que este fallo es silencioso y fácil de no
+  detectar. `write_automation_file` añade esta línea automáticamente
+  cuando el fichero es `automations/<nombre>.py` directo (no anidado) y
+  aún no está importado — pero comprueba siempre la nota que devuelve la
+  herramienta, y si la estructura no es el caso simple (subpaquetes,
+  etc.), añade el `import` tú mismo con `write_automation_file` sobre
+  `automations/__init__.py`.
 - Cualquier otro paquete auxiliar (`helpers/`, constantes, etc.) es Python
   normal, importable desde los módulos de `automations/`.
 - **Nunca** se escriben a mano ni se comitean `entities.py`, `devices.py`,
@@ -128,3 +165,12 @@ esto como sentencias separadas para "forzar" el binding.
 4. Si la tarea implica acciones sobre climatización, riego, cierres u
    otros sistemas con impacto físico real, confirma con el usuario antes
    de hacer push si la petición era ambigua.
+5. `reload_ok` en `True` confirma que el código importa y no rompe nada —
+   **no confirma que la automatización nueva esté realmente conectada ni
+   que haga lo que se pidió**. Antes de decir que está hecho, verifica
+   además con `read_automation_file` que `automations/__init__.py`
+   importa el módulo nuevo, y que la clase usa de verdad `init_condition()`/
+   `action()` sobre `entities.X`/`devices.X` (no la API inventada de la
+   sección "Antes que nada" de arriba) — un fichero bien escrito pero no
+   importado, o con una API que no existe, no da ningún error y no hace
+   absolutamente nada.

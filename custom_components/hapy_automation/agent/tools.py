@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 
 from homeassistant.core import HomeAssistant
 
@@ -100,7 +101,14 @@ TOOL_SCHEMAS = [
             "description": (
                 "Write (create or overwrite) a file in the automations repo, by "
                 "path relative to the repo root. Does not commit or push by "
-                "itself — call git_commit_and_push afterwards."
+                "itself — call git_commit_and_push afterwards. If this creates a "
+                "new top-level module directly under automations/ (e.g. "
+                "automations/foo.py), it is automatically wired into "
+                "automations/__init__.py for you (a module that isn't imported "
+                "there is never executed and does nothing at all, silently) — "
+                "the response tells you if that happened. This does NOT replace "
+                "using the real hapy.Automation class API — see "
+                "get_automation_api_reference before writing any automation logic."
             ),
             "parameters": {
                 "type": "object",
@@ -256,7 +264,51 @@ class AgentTools:
             with open(full_path, 'w', encoding='utf-8') as f:
                 f.write(content)
         await self.hass.async_add_executor_job(_write)
-        return {"path": path, "bytes_written": len(content.encode('utf-8'))}
+
+        wired = await self.hass.async_add_executor_job(self._ensure_wired_into_init, path)
+
+        result = {"path": path, "bytes_written": len(content.encode('utf-8'))}
+        if wired:
+            result["note"] = (
+                f"Also added 'from .{wired} import *' to automations/__init__.py — "
+                "a new module under automations/ does nothing at all until it's "
+                "imported there; this is done for you, but double check it with "
+                "read_automation_file if anything about the layout looks unusual."
+            )
+        return result
+
+    def _ensure_wired_into_init(self, written_path: str) -> str | None:
+        """A new top-level module under automations/ (e.g. automations/foo.py)
+        is completely inert — never imported, never bound to anything — unless
+        automations/__init__.py imports it. Found for real: an agent wrote a
+        whole automation this way, reload reported "ok" (there was nothing
+        broken to fail on, since the dead file was never touched), and it
+        silently did nothing. Rather than rely on remembering this step
+        (documented in AUTOMATION_API_REFERENCE.md, and still missed), just
+        do it automatically for the common flat-module-under-automations/
+        case; returns the module name if it wired something in, else None."""
+        normalized = written_path.replace(os.sep, '/')
+        match = re.fullmatch(r'automations/([A-Za-z_][A-Za-z0-9_]*)\.py', normalized)
+        if not match:
+            return None
+        module_name = match.group(1)
+        if module_name == '__init__':
+            return None
+
+        init_path = os.path.join(self.coordinator.repo_path, 'automations', '__init__.py')
+        import_line = f'from .{module_name} import *\n'
+        existing = ''
+        if os.path.isfile(init_path):
+            with open(init_path, 'r', encoding='utf-8') as f:
+                existing = f.read()
+        if f'.{module_name} import' in existing:
+            return None  # already wired, e.g. this was an update not a new file
+
+        with open(init_path, 'a', encoding='utf-8') as f:
+            if existing and not existing.endswith('\n'):
+                f.write('\n')
+            f.write(import_line)
+        return module_name
 
     async def _tool_git_commit_and_push(self, message: str) -> dict:
         sha = await self.hass.async_add_executor_job(
