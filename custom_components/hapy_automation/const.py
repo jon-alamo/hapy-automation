@@ -106,6 +106,13 @@ CONF_STT_MODEL = "stt_model"
 CONF_TTS_MODEL = "tts_model"
 CONF_TTS_VOICE = "tts_voice"
 CONF_LANGUAGE = "language"
+# Optional separate provider for speech-to-text/text-to-speech, since not
+# every OpenAI-compatible chat backend (e.g. OpenRouter) also exposes
+# /audio/transcriptions and /audio/speech. Left blank, voice falls back to
+# the main llm_api_base_url/llm_api_key — same behavior as before these
+# existed.
+CONF_AUDIO_API_BASE_URL = "audio_api_base_url"
+CONF_AUDIO_API_KEY = "audio_api_key"
 
 DEFAULT_ENABLE_AGENT = False
 DEFAULT_LLM_API_BASE_URL = "https://api.openai.com/v1"

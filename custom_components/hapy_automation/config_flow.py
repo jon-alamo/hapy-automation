@@ -19,6 +19,8 @@ from .const import (
     AUTH_METHOD_PAT,
     AUTH_METHOD_SSH_KEY,
     AUTH_METHOD_SSH_KEY_GENERATE,
+    CONF_AUDIO_API_BASE_URL,
+    CONF_AUDIO_API_KEY,
     CONF_AUTH_METHOD,
     CONF_BRANCH,
     CONF_DRY_RUN,
@@ -127,6 +129,10 @@ def _agent_schema(defaults: dict) -> vol.Schema:
         vol.Optional(CONF_STT_MODEL, default=defaults.get(CONF_STT_MODEL, DEFAULT_STT_MODEL)): str,
         vol.Optional(CONF_TTS_MODEL, default=defaults.get(CONF_TTS_MODEL, DEFAULT_TTS_MODEL)): str,
         vol.Optional(CONF_TTS_VOICE, default=defaults.get(CONF_TTS_VOICE, DEFAULT_TTS_VOICE)): str,
+        vol.Optional(
+            CONF_AUDIO_API_BASE_URL, default=defaults.get(CONF_AUDIO_API_BASE_URL, '')
+        ): str,
+        vol.Optional(CONF_AUDIO_API_KEY, default=defaults.get(CONF_AUDIO_API_KEY, '')): str,
         vol.Optional(
             CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
         ): str,

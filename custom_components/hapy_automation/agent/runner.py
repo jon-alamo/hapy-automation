@@ -14,6 +14,8 @@ from homeassistant.core import HomeAssistant
 from ..const import (
     AGENT_MAX_ITERATIONS,
     AGENT_MAX_SECONDS,
+    CONF_AUDIO_API_BASE_URL,
+    CONF_AUDIO_API_KEY,
     CONF_LANGUAGE,
     CONF_LLM_API_BASE_URL,
     CONF_LLM_API_KEY,
@@ -93,6 +95,8 @@ class AgentRunner:
             stt_model=data.get(CONF_STT_MODEL, DEFAULT_STT_MODEL),
             tts_model=data.get(CONF_TTS_MODEL, DEFAULT_TTS_MODEL),
             tts_voice=data.get(CONF_TTS_VOICE, DEFAULT_TTS_VOICE),
+            audio_base_url=data.get(CONF_AUDIO_API_BASE_URL) or None,
+            audio_api_key=data.get(CONF_AUDIO_API_KEY) or None,
         )
         self.tools = AgentTools(hass, coordinator)
 

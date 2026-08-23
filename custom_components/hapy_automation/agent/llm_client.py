@@ -1,10 +1,15 @@
-"""Client for an OpenAI-compatible LLM endpoint: chat completions with
+"""Client for OpenAI-compatible endpoints: chat completions with
 tool-calling (the de-facto standard shape across OpenAI itself and
-self-hosted backends like Ollama/vLLM/LM Studio/OpenRouter), plus
-best-effort speech-to-text and text-to-speech for the voice path. STT/TTS
-are optional — not every OpenAI-compatible backend implements the audio
-endpoints, so failures there are caught and reported as unavailable rather
-than raised, letting the caller fall back to text.
+self-hosted/routed backends like Ollama/vLLM/LM Studio/OpenRouter), plus
+best-effort speech-to-text and text-to-speech for the voice path.
+
+Chat and audio can be two entirely different providers/credentials —
+not every OpenAI-compatible chat backend also exposes
+/audio/transcriptions and /audio/speech (OpenRouter, for one, is
+chat-only). If no separate audio base_url/api_key is given, audio calls
+reuse the chat ones, same as before this split existed. Either way, STT/TTS
+failures are caught and reported as unavailable rather than raised,
+letting the caller fall back to text.
 """
 from __future__ import annotations
 
@@ -21,6 +26,7 @@ class LLMClient:
     def __init__(
             self, hass: HomeAssistant, base_url: str, api_key: str, model: str,
             stt_model: str, tts_model: str, tts_voice: str,
+            audio_base_url: str | None = None, audio_api_key: str | None = None,
     ):
         self._hass = hass
         self.base_url = base_url.rstrip('/')
@@ -29,13 +35,16 @@ class LLMClient:
         self.stt_model = stt_model
         self.tts_model = tts_model
         self.tts_voice = tts_voice
+        self.audio_base_url = (audio_base_url or base_url).rstrip('/')
+        self.audio_api_key = audio_api_key or api_key
 
     @property
     def _session(self) -> aiohttp.ClientSession:
         return async_get_clientsession(self._hass)
 
-    def _headers(self) -> dict:
-        return {"Authorization": f"Bearer {self.api_key}"}
+    @staticmethod
+    def _headers(api_key: str) -> dict:
+        return {"Authorization": f"Bearer {api_key}"}
 
     async def chat(self, messages: list[dict], tools: list[dict]) -> dict:
         """Returns the assistant message dict: {role, content, tool_calls?}."""
@@ -47,7 +56,7 @@ class LLMClient:
         }
         async with self._session.post(
                 f"{self.base_url}/chat/completions",
-                json=payload, headers=self._headers(),
+                json=payload, headers=self._headers(self.api_key),
                 timeout=aiohttp.ClientTimeout(total=90),
         ) as resp:
             data = await resp.json()
@@ -73,8 +82,8 @@ class LLMClient:
         )
         try:
             async with self._session.post(
-                    f"{self.base_url}/audio/transcriptions",
-                    data=form, headers=self._headers(),
+                    f"{self.audio_base_url}/audio/transcriptions",
+                    data=form, headers=self._headers(self.audio_api_key),
                     timeout=aiohttp.ClientTimeout(total=60),
             ) as resp:
                 data = await resp.json()
@@ -98,8 +107,8 @@ class LLMClient:
         }
         try:
             async with self._session.post(
-                    f"{self.base_url}/audio/speech",
-                    json=payload, headers=self._headers(),
+                    f"{self.audio_base_url}/audio/speech",
+                    json=payload, headers=self._headers(self.audio_api_key),
                     timeout=aiohttp.ClientTimeout(total=60),
             ) as resp:
                 if resp.status >= 400:

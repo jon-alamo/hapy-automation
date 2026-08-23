@@ -30,7 +30,9 @@
           "stt_model": "Modelo de transcripción (voz→texto)",
           "tts_model": "Modelo de síntesis (texto→voz)",
           "tts_voice": "Voz",
-          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
+          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)",
+          "audio_api_base_url": "URL base para voz (opcional — vacío = usa la misma que el chat). Útil si el proveedor de chat (p.ej. OpenRouter) no soporta audio.",
+          "audio_api_key": "API key para voz (opcional — vacío = usa la misma que el chat)"
         }
       },
       "generate_key": {
@@ -81,7 +83,9 @@
           "stt_model": "Modelo de transcripción (voz→texto)",
           "tts_model": "Modelo de síntesis (texto→voz)",
           "tts_voice": "Voz",
-          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)"
+          "language": "Idioma por defecto (código ISO-639-1, ej: es, en)",
+          "audio_api_base_url": "URL base para voz (opcional — vacío = usa la misma que el chat). Útil si el proveedor de chat (p.ej. OpenRouter) no soporta audio.",
+          "audio_api_key": "API key para voz (opcional — vacío = usa la misma que el chat)"
         }
       },
       "repo_generate_key": {
