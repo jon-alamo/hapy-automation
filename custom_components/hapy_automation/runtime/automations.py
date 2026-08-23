@@ -37,6 +37,22 @@ class AutomationHandler(type):
     on_automation_fired = []
     _base_class = None
 
+    # {automation_id: {"bound_to": [entity_id/device_id, ...], "error": str|None}}
+    # for every automation processed in the *last* reload — reset in
+    # reset_automations(), populated by make_bindings(). Exists because
+    # binding failures were otherwise invisible to anything but DEBUG logs:
+    # a wrong/hallucinated entities.X or devices.X reference inside
+    # init_condition() raises AttributeError, which make_bindings() below
+    # catches and just logs a warning — the automation ends up with zero
+    # bindings, completely inert, while the reload that created it still
+    # reports "ok" (nothing actually crashed). Found for real: an agent
+    # wrote and pushed two automations referencing devices.DeviceConnected
+    # and entities.TotalPeople, neither of which exist — both silently
+    # did nothing, and neither the agent nor the user had anything but a
+    # DEBUG-level log line to notice from. See agent/tools.py's
+    # git_commit_and_push, which now surfaces this dict directly.
+    binding_results = {}
+
     @classmethod
     def make_bindings(cls, new_class):
         # Reset access-tracking BEFORE this pass, not just after it (the
@@ -57,6 +73,7 @@ class AutomationHandler(type):
         models.EntityHandler.reset_access()
         models.DeviceHandler.reset_access()
         models.enter_discovery_mode()
+        automation_id = new_class.get_id()
         try:
             new_class().init_condition()
         except Exception as e:
@@ -64,15 +81,20 @@ class AutomationHandler(type):
                 '%s not bound to any entity or device due to init_condition error: %s.',
                 new_class.__name__, e,
             )
+            cls.binding_results[automation_id] = {'bound_to': [], 'error': str(e)}
             return
         finally:
             models.exit_discovery_mode()
+        bound_to = []
         for entity_id in models.EntityHandler.track_access:
-            cls.automation_bindings.setdefault(entity_id, {})[new_class.get_id()] = new_class
+            cls.automation_bindings.setdefault(entity_id, {})[automation_id] = new_class
+            bound_to.append(entity_id)
             logger.debug('[AUTOMATIONS] make_bindings: %s bound to %s.', new_class.__name__, entity_id)
         for device_id in models.DeviceHandler.track_access:
-            cls.automation_bindings.setdefault(device_id, {})[new_class.get_id()] = new_class
+            cls.automation_bindings.setdefault(device_id, {})[automation_id] = new_class
+            bound_to.append(device_id)
             logger.debug('[AUTOMATIONS] make_bindings: %s bound to %s.', new_class.__name__, device_id)
+        cls.binding_results[automation_id] = {'bound_to': bound_to, 'error': None}
         models.EntityHandler.reset_access()
         models.DeviceHandler.reset_access()
 
@@ -89,6 +111,7 @@ class AutomationHandler(type):
     def reset_automations(cls):
         cls.automation_bindings = {}
         cls.automations = {}
+        cls.binding_results = {}
 
     @classmethod
     def handle_exit_conditions(cls):

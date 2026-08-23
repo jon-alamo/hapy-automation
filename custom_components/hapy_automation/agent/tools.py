@@ -12,6 +12,8 @@ import re
 
 from homeassistant.core import HomeAssistant
 
+from ..runtime.automations import AutomationHandler
+
 logger = logging.getLogger(__name__)
 
 MAX_LIST_STATES_RESULTS = 100
@@ -129,7 +131,16 @@ TOOL_SCHEMAS = [
                 "push it, then trigger a real reload and report whether it actually "
                 "succeeded. Always check the reload result before telling the user "
                 "a change is live — a failed reload means the previous code is "
-                "still the one actually running."
+                "still the one actually running. On success this ALSO returns "
+                "`bindings`: which automations actually attached to real "
+                "entities/devices vs. which ended up with none (`unbound_or_failed`, "
+                "with the error if there was one). reload_ok=true does NOT mean "
+                "your automation does anything — a wrong entities.X/devices.X name "
+                "inside init_condition() silently produces zero bindings without "
+                "failing the reload. Any automation you just wrote appearing in "
+                "unbound_or_failed means it does nothing at all; investigate with "
+                "list_states/get_state (don't guess a corrected name) and fix it "
+                "in the same conversation before telling the user it's done."
             ),
             "parameters": {
                 "type": "object",
@@ -142,7 +153,11 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "get_reload_status",
-            "description": "Get the current reload status: commit SHA running, last reload ok/error.",
+            "description": (
+                "Get the current reload status: commit SHA running, last reload "
+                "ok/error, and which automations are actually bound to real "
+                "entities/devices vs. bound to nothing (`bindings.unbound_or_failed`)."
+            ),
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -160,6 +175,28 @@ TOOL_SCHEMAS = [
         },
     },
 ]
+
+
+def _binding_summary() -> dict:
+    """Ground truth for "did the automation I just wrote actually attach to
+    anything real" — reload_ok alone can't answer that (see
+    AutomationHandler.binding_results' docstring): a wrong entities.X/
+    devices.X reference inside init_condition() is swallowed as a warning,
+    not a reload failure, leaving the automation registered but bound to
+    nothing. `unbound` is the list to actually look at after writing new
+    automation code."""
+    results = AutomationHandler.binding_results
+    unbound = {
+        automation_id: info["error"]
+        for automation_id, info in results.items()
+        if not info["bound_to"]
+    }
+    bound = {
+        automation_id: info["bound_to"]
+        for automation_id, info in results.items()
+        if info["bound_to"]
+    }
+    return {"bound": bound, "unbound_or_failed": unbound}
 
 
 class AgentTools:
@@ -317,12 +354,15 @@ class AgentTools:
         if sha is None:
             return {"pushed": False, "reason": "nothing to commit"}
         result = await self.coordinator.async_reload(force=True)
-        return {
+        response = {
             "pushed": True,
             "sha": sha,
             "reload_ok": result.ok,
             "reload_error": result.error,
         }
+        if result.ok:
+            response["bindings"] = _binding_summary()
+        return response
 
     async def _tool_get_reload_status(self) -> dict:
         c = self.coordinator
@@ -331,6 +371,7 @@ class AgentTools:
             "last_reload_status": c.last_reload_status,
             "last_reload_error": c.last_reload_error,
             "last_reload_at": c.last_reload_at.isoformat() if c.last_reload_at else None,
+            "bindings": _binding_summary(),
         }
 
     async def _tool_get_automation_api_reference(self) -> dict:

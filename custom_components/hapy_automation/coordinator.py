@@ -262,6 +262,7 @@ class HapyCoordinator:
             old_modules = {name: sys.modules[name] for name in purge_names if name in sys.modules}
             old_automations = dict(AutomationHandler.automations)
             old_bindings = dict(AutomationHandler.automation_bindings)
+            old_binding_results = dict(AutomationHandler.binding_results)
             old_entities = dict(models.EntityHandler.entities)
             old_devices = dict(models.DeviceHandler.devices)
 
@@ -284,6 +285,7 @@ class HapyCoordinator:
                 sys.modules.update(old_modules)
                 AutomationHandler.automations = old_automations
                 AutomationHandler.automation_bindings = old_bindings
+                AutomationHandler.binding_results = old_binding_results
                 models.EntityHandler.entities = old_entities
                 models.DeviceHandler.devices = old_devices
                 raise
