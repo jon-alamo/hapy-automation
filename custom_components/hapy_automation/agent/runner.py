@@ -66,6 +66,17 @@ def _safe_truncate_history(history: list[dict], max_len: int) -> list[dict]:
     return []
 
 
+def _describe_error(e: Exception) -> str:
+    """str(e) is empty for several common exceptions — notably
+    asyncio.TimeoutError, which is exactly what a slow reasoning model's
+    chat completion raises if it runs past the HTTP timeout. Found for
+    real via Telegram: the user just saw "Error del agente:" with nothing
+    after it. Always include the exception type so there's something to
+    go on either way."""
+    message = str(e)
+    return f"{type(e).__name__}: {message}" if message else type(e).__name__
+
+
 def _parse_chat_ids(raw: str) -> set[int]:
     ids = set()
     for part in raw.split(','):
@@ -209,7 +220,7 @@ class AgentRunner:
             new_history, response_text = await agent_loop.run(history, text)
         except Exception as e:
             logger.exception('[hapy_automation agent] agent loop failed')
-            await self.telegram.send_message(chat_id, f'Error del agente: {e}')
+            await self.telegram.send_message(chat_id, f'Error del agente: {_describe_error(e)}')
             return
         self._histories[chat_id] = _safe_truncate_history(new_history, MAX_HISTORY_MESSAGES)
 

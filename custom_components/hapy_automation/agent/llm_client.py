@@ -54,10 +54,17 @@ class LLMClient:
             "tools": tools,
             "tool_choice": "auto",
         }
+        # Reasoning models (e.g. GLM 5.2 via OpenRouter) can spend a long
+        # time on hidden chain-of-thought before the first response token —
+        # found for real: 90s was routinely too short once the chat model
+        # was switched to one, and the resulting asyncio.TimeoutError has
+        # an *empty* str(), which surfaced to the user as the unhelpful
+        # "Error del agente:" with nothing after it (see runner.py's
+        # _describe_error, which is the other half of this fix).
         async with self._session.post(
                 f"{self.base_url}/chat/completions",
                 json=payload, headers=self._headers(self.api_key),
-                timeout=aiohttp.ClientTimeout(total=90),
+                timeout=aiohttp.ClientTimeout(total=180),
         ) as resp:
             data = await resp.json()
             if resp.status >= 400:

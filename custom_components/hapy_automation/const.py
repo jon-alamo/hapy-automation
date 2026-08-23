@@ -177,5 +177,11 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 AGENT_MAX_ITERATIONS = 12
-AGENT_MAX_SECONDS = 120
+# Was 120 — too tight once the chat model became a reasoning one (GLM 5.2
+# via OpenRouter): a single chat() call can itself take up to 180s (see
+# llm_client.py's per-request timeout), so a 120s *total* budget across
+# potentially several tool-calling iterations left almost no room and was
+# routinely hit. 300s keeps a real ceiling (never hangs the conversation
+# forever) while giving a reasoning model room across multiple steps.
+AGENT_MAX_SECONDS = 300
 TELEGRAM_POLL_TIMEOUT = 30

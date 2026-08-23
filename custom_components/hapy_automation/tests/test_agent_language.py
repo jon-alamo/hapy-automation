@@ -59,3 +59,15 @@ def test_language_directive_present_even_with_custom_system_prompt():
     prompt = runner._system_prompt()
     assert prompt.startswith("Eres un asistente muy breve.")
     assert "Responde SIEMPRE en español" in prompt
+
+
+def test_describe_error_never_returns_a_blank_message():
+    """Found for real via Telegram: str(asyncio.TimeoutError()) is empty,
+    so "Error del agente: {e}" showed the user nothing after the colon —
+    exactly what happened once the chat model became a slow reasoning
+    one and started hitting the HTTP timeout."""
+    from custom_components.hapy_automation.agent.runner import _describe_error
+
+    assert _describe_error(TimeoutError()) == "TimeoutError"
+    assert _describe_error(TimeoutError("took too long")) == "TimeoutError: took too long"
+    assert _describe_error(ValueError("bad value")) == "ValueError: bad value"
