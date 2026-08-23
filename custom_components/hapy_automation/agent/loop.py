@@ -9,11 +9,19 @@ from __future__ import annotations
 import json
 import logging
 import time
+from typing import Awaitable, Callable
 
 from .llm_client import LLMClient
 from .tools import TOOL_SCHEMAS, AgentTools
 
 logger = logging.getLogger(__name__)
+
+# Iteration at which we tell the user we're still working, if the task
+# hasn't finished by then. Found for real: a "count people via mobile
+# devices" question needed 7+ tool-calling rounds and 4+ minutes — with no
+# feedback in between, the user assumed the bot was broken rather than
+# just slow, and reported it as "no funciona" while it was still working.
+PROGRESS_NOTICE_ITERATION = 3
 
 
 class AgentLoop:
@@ -27,18 +35,28 @@ class AgentLoop:
         self.max_iterations = max_iterations
         self.max_seconds = max_seconds
 
-    async def run(self, history: list[dict], user_message: str) -> tuple[list[dict], str]:
+    async def run(
+            self, history: list[dict], user_message: str,
+            on_progress: Callable[[], Awaitable[None]] | None = None,
+    ) -> tuple[list[dict], str]:
         """`history` is the prior conversation (no system message — that's
         prepended fresh each call so an edited system prompt takes effect
         immediately on the next message, not just for new conversations).
         Returns (new_history, final_text_response); `new_history` is what
         the caller should persist for the next turn.
+
+        `on_progress`, if given, is awaited once if the task is still going
+        after `PROGRESS_NOTICE_ITERATION` rounds — lets the caller reassure
+        the user a long task is still in progress rather than silently
+        hung, without spamming a message per tool-calling round.
         """
         history = list(history) + [{"role": "user", "content": user_message}]
         messages = [{"role": "system", "content": self.system_prompt}] + history
 
         start = time.monotonic()
         for iteration in range(self.max_iterations):
+            if on_progress is not None and iteration == PROGRESS_NOTICE_ITERATION:
+                await on_progress()
             if time.monotonic() - start > self.max_seconds:
                 text = (
                     "No he podido terminar la tarea a tiempo (límite de "

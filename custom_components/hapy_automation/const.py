@@ -177,11 +177,13 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 AGENT_MAX_ITERATIONS = 12
-# Was 120 — too tight once the chat model became a reasoning one (GLM 5.2
-# via OpenRouter): a single chat() call can itself take up to 180s (see
-# llm_client.py's per-request timeout), so a 120s *total* budget across
-# potentially several tool-calling iterations left almost no room and was
-# routinely hit. 300s keeps a real ceiling (never hangs the conversation
-# forever) while giving a reasoning model room across multiple steps.
-AGENT_MAX_SECONDS = 300
+# Was 120, then 300 — still too tight. Found for real: a legitimate,
+# non-broken query ("count people via mobile devices") took 7+ tool-calling
+# rounds and ~4.5 minutes end to end against GLM 5.2 via OpenRouter, well
+# past the 300s budget. Each round's own chat() call also gets slower as
+# the conversation history grows (see llm_client.py's per-request timeout,
+# raised alongside this). 480s gives genuinely slow-but-working multi-step
+# tasks room to finish; PROGRESS_NOTICE_ITERATION in loop.py tells the user
+# it's still working partway through instead of leaving them in silence.
+AGENT_MAX_SECONDS = 480
 TELEGRAM_POLL_TIMEOUT = 30

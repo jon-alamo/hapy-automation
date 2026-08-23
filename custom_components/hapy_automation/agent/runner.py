@@ -138,6 +138,7 @@ class AgentRunner:
         return base + directive
 
     def start(self) -> None:
+        logger.info('[hapy_automation agent] starting telegram poll loop')
         self._task = self.hass.async_create_background_task(
             self._run(), name='hapy_automation agent telegram poll',
         )
@@ -194,7 +195,29 @@ class AgentRunner:
 
         lock = self._chat_locks.setdefault(chat_id, asyncio.Lock())
         async with lock:
-            await self._process_message(chat_id, message)
+            # `_handle_message` runs as a fire-and-forget task (see `_run`'s
+            # `hass.async_create_task` call) — nothing awaits it, so any
+            # exception that escapes this method is only ever surfaced via
+            # asyncio's default "Task exception was never retrieved"
+            # handler, if at all. Found for real: the previous code only
+            # wrapped the LLM call itself in try/except, leaving
+            # download_file/transcribe/send_message/synthesize/send_voice
+            # completely unprotected — a failure in any of those (e.g. the
+            # final send_message call) meant the user got no reply and no
+            # error, with nothing actionable in the logs either. This outer
+            # catch-all guarantees at least one attempt at telling the user
+            # something went wrong, and always logs the real exception.
+            try:
+                logger.info(
+                    '[hapy_automation agent] message received from chat_id %s (voice=%s)',
+                    chat_id, 'voice' in message,
+                )
+                await self._process_message(chat_id, message)
+                logger.info('[hapy_automation agent] reply sent to chat_id %s', chat_id)
+            except Exception as e:
+                logger.exception('[hapy_automation agent] processing message failed')
+                with contextlib.suppress(Exception):
+                    await self.telegram.send_message(chat_id, f'Error del agente: {_describe_error(e)}')
 
     async def _process_message(self, chat_id: int, message: dict) -> None:
         is_voice = 'voice' in message
@@ -216,12 +239,14 @@ class AgentRunner:
             AGENT_MAX_ITERATIONS, AGENT_MAX_SECONDS,
         )
         history = self._histories.get(chat_id, [])
-        try:
-            new_history, response_text = await agent_loop.run(history, text)
-        except Exception as e:
-            logger.exception('[hapy_automation agent] agent loop failed')
-            await self.telegram.send_message(chat_id, f'Error del agente: {_describe_error(e)}')
-            return
+
+        async def _notify_still_working() -> None:
+            with contextlib.suppress(Exception):
+                await self.telegram.send_message(
+                    chat_id, 'Sigo investigando, dame un momento…'
+                )
+
+        new_history, response_text = await agent_loop.run(history, text, _notify_still_working)
         self._histories[chat_id] = _safe_truncate_history(new_history, MAX_HISTORY_MESSAGES)
 
         if is_voice:
