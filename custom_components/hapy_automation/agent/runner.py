@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
 
 from homeassistant.core import HomeAssistant
 
@@ -42,6 +43,28 @@ from .tools import AgentTools
 logger = logging.getLogger(__name__)
 
 MAX_HISTORY_MESSAGES = 40
+
+# Short, human-facing headline per tool — shown as a progress update while
+# a multi-round task is running (see AgentLoop.run's `on_progress`), not
+# the tool's technical name or its arguments. Deliberately vague/generic
+# rather than describing exact entities touched, since arguments aren't
+# available here in a form worth surfacing to the user.
+TOOL_HEADLINES = {
+    'get_state': 'Consultando el estado de la casa…',
+    'list_states': 'Consultando el estado de la casa…',
+    'call_service': 'Ejecutando una acción en casa…',
+    'list_automation_files': 'Revisando las automatizaciones…',
+    'read_automation_file': 'Leyendo el código de las automatizaciones…',
+    'write_automation_file': 'Escribiendo la automatización…',
+    'git_commit_and_push': 'Guardando y desplegando los cambios…',
+    'get_reload_status': 'Comprobando que todo recargó bien…',
+    'get_automation_api_reference': 'Repasando cómo se escriben las automatizaciones…',
+}
+# Minimum gap between progress messages — tool-calling rounds can be a
+# fraction of a second apart (e.g. several read_automation_file calls in a
+# row), and without this a single burst would fire one Telegram message
+# per round instead of one per meaningfully distinct phase of work.
+PROGRESS_MIN_INTERVAL_SECONDS = 8
 
 
 def _safe_truncate_history(history: list[dict], max_len: int) -> list[dict]:
@@ -240,13 +263,23 @@ class AgentRunner:
         )
         history = self._histories.get(chat_id, [])
 
-        async def _notify_still_working() -> None:
-            with contextlib.suppress(Exception):
-                await self.telegram.send_message(
-                    chat_id, 'Sigo investigando, dame un momento…'
-                )
+        last_sent_at = 0.0
 
-        new_history, response_text = await agent_loop.run(history, text, _notify_still_working)
+        async def _notify_progress(tool_names: list[str]) -> None:
+            nonlocal last_sent_at
+            now = time.monotonic()
+            # Throttled — tool-calling rounds can be a fraction of a second
+            # apart (e.g. several read_automation_file calls in a row), and
+            # without this a single burst would fire one Telegram message
+            # per round instead of one per meaningfully distinct phase.
+            if now - last_sent_at < PROGRESS_MIN_INTERVAL_SECONDS:
+                return
+            last_sent_at = now
+            headline = TOOL_HEADLINES.get(tool_names[0], 'Sigo trabajando en ello…')
+            with contextlib.suppress(Exception):
+                await self.telegram.send_message(chat_id, headline)
+
+        new_history, response_text = await agent_loop.run(history, text, _notify_progress)
         self._histories[chat_id] = _safe_truncate_history(new_history, MAX_HISTORY_MESSAGES)
 
         if is_voice:

@@ -16,13 +16,6 @@ from .tools import TOOL_SCHEMAS, AgentTools
 
 logger = logging.getLogger(__name__)
 
-# Iteration at which we tell the user we're still working, if the task
-# hasn't finished by then. Found for real: a "count people via mobile
-# devices" question needed 7+ tool-calling rounds and 4+ minutes — with no
-# feedback in between, the user assumed the bot was broken rather than
-# just slow, and reported it as "no funciona" while it was still working.
-PROGRESS_NOTICE_ITERATION = 3
-
 
 class AgentLoop:
     def __init__(
@@ -37,7 +30,7 @@ class AgentLoop:
 
     async def run(
             self, history: list[dict], user_message: str,
-            on_progress: Callable[[], Awaitable[None]] | None = None,
+            on_progress: Callable[[list[str]], Awaitable[None]] | None = None,
     ) -> tuple[list[dict], str]:
         """`history` is the prior conversation (no system message — that's
         prepended fresh each call so an edited system prompt takes effect
@@ -45,18 +38,19 @@ class AgentLoop:
         Returns (new_history, final_text_response); `new_history` is what
         the caller should persist for the next turn.
 
-        `on_progress`, if given, is awaited once if the task is still going
-        after `PROGRESS_NOTICE_ITERATION` rounds — lets the caller reassure
-        the user a long task is still in progress rather than silently
-        hung, without spamming a message per tool-calling round.
+        `on_progress`, if given, is awaited with the list of tool names
+        about to run, once per tool-calling round from the *second* round
+        onward (a single quick tool call followed by the final answer —
+        the common case — stays silent; only genuinely multi-round tasks
+        get updates). Lets the caller post short "still working, here's
+        what I'm doing" headlines instead of leaving a long task looking
+        identical to a hung one.
         """
         history = list(history) + [{"role": "user", "content": user_message}]
         messages = [{"role": "system", "content": self.system_prompt}] + history
 
         start = time.monotonic()
         for iteration in range(self.max_iterations):
-            if on_progress is not None and iteration == PROGRESS_NOTICE_ITERATION:
-                await on_progress()
             if time.monotonic() - start > self.max_seconds:
                 text = (
                     "No he podido terminar la tarea a tiempo (límite de "
@@ -74,6 +68,10 @@ class AgentLoop:
             if not tool_calls:
                 text = assistant_message.get("content") or "(sin respuesta del modelo)"
                 return history, text
+
+            if on_progress is not None and iteration >= 1:
+                names = [call["function"]["name"] for call in tool_calls]
+                await on_progress(names)
 
             for call in tool_calls:
                 fn = call["function"]

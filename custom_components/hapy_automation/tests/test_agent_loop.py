@@ -82,13 +82,13 @@ def test_loop_stops_after_max_iterations():
     assert len(tools.dispatched) == 3
 
 
-def test_loop_calls_on_progress_once_after_threshold_iteration():
+def test_loop_calls_on_progress_with_tool_names_from_second_round_onward():
     """Found for real via Telegram: a legitimate multi-step query (7+
     tool-calling rounds, ~4.5 minutes) looked identical to a hung/broken
     bot from the user's side, since nothing was sent until the final
-    answer (or the timeout error). on_progress lets the caller send a
-    single reassurance message partway through, without spamming one per
-    round."""
+    answer (or the timeout error). on_progress lets the caller post a
+    short headline per distinct phase of work, starting from the second
+    round — the common case (one tool call, then the answer) stays quiet."""
     llm = FakeLLM([_assistant_tool_call("get_state", {"entity_id": "x"})] * 5 + [
         _assistant_text("listo")
     ])
@@ -97,24 +97,30 @@ def test_loop_calls_on_progress_once_after_threshold_iteration():
 
     progress_calls = []
 
-    async def on_progress():
-        progress_calls.append(True)
+    async def on_progress(tool_names):
+        progress_calls.append(tool_names)
 
     history, response = asyncio.run(agent.run([], "haz algo largo", on_progress))
 
     assert response == "listo"
-    assert len(progress_calls) == 1
+    # 6 LLM calls total (iterations 0-5): iteration 0's tool call is the
+    # common/quick case and stays silent; iterations 1-4 also request
+    # get_state and each fire on_progress; iteration 5 is the final answer.
+    assert progress_calls == [["get_state"]] * 4
 
 
-def test_loop_does_not_call_on_progress_for_a_quick_answer():
-    llm = FakeLLM([_assistant_text("respuesta rápida")])
+def test_loop_does_not_call_on_progress_for_a_single_round_answer():
+    llm = FakeLLM([
+        _assistant_tool_call("get_state", {"entity_id": "light.office"}),
+        _assistant_text("respuesta rápida"),
+    ])
     tools = FakeTools()
     agent = AgentLoop(llm, tools, system_prompt="system", max_iterations=10, max_seconds=30)
 
     progress_calls = []
 
-    async def on_progress():
-        progress_calls.append(True)
+    async def on_progress(tool_names):
+        progress_calls.append(tool_names)
 
     asyncio.run(agent.run([], "pregunta simple", on_progress))
 
