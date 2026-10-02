@@ -17,6 +17,7 @@ from ..const import (
     AGENT_MAX_SECONDS,
     CONF_AUDIO_API_BASE_URL,
     CONF_AUDIO_API_KEY,
+    CONF_ENABLE_HOST_SHELL,
     CONF_LANGUAGE,
     CONF_LLM_API_BASE_URL,
     CONF_LLM_API_KEY,
@@ -59,6 +60,7 @@ TOOL_HEADLINES = {
     'git_commit_and_push': 'Guardando y desplegando los cambios…',
     'get_reload_status': 'Comprobando que todo recargó bien…',
     'get_automation_api_reference': 'Repasando cómo se escriben las automatizaciones…',
+    'run_host_command': 'Ejecutando un comando en el host…',
 }
 # Minimum gap between progress messages — tool-calling rounds can be a
 # fraction of a second apart (e.g. several read_automation_file calls in a
@@ -158,6 +160,18 @@ class AgentRunner:
             "sin excepción, sea cual sea el idioma en el que te escriban "
             "o hablen — nunca cambies de idioma a mitad de conversación."
         )
+        if self.entry.data.get(CONF_ENABLE_HOST_SHELL):
+            # Same reasoning as the language directive: appended so it applies
+            # even to a saved/customized system prompt that predates this.
+            directive += (
+                "\n\nTienes acceso por shell al host de Home Assistant "
+                "(run_host_command). Úsalo para lo que la API no cubre "
+                "(instalar/desinstalar, editar ficheros de configuración, CLI "
+                "`ha`). Comprueba siempre el exit_code. Antes de acciones "
+                "destructivas o irreversibles, o de reiniciar Home Assistant o "
+                "el host, pide confirmación al usuario y espera su respuesta; "
+                "para el resto, actúa directamente."
+            )
         return base + directive
 
     def start(self) -> None:

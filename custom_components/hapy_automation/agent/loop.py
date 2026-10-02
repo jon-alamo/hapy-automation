@@ -12,7 +12,7 @@ import time
 from typing import Awaitable, Callable
 
 from .llm_client import LLMClient
-from .tools import TOOL_SCHEMAS, AgentTools
+from .tools import AgentTools
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class AgentLoop:
                 history.append({"role": "assistant", "content": text})
                 return history, text
 
-            assistant_message = await self.llm.chat(messages, TOOL_SCHEMAS)
+            assistant_message = await self.llm.chat(messages, self.tools.schemas)
             messages.append(assistant_message)
             history.append(assistant_message)
 

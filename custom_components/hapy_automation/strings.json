@@ -55,7 +55,8 @@
       "init": {
         "menu_options": {
           "repo": "Repositorio y recarga",
-          "agent": "Agente conversacional"
+          "agent": "Agente conversacional",
+          "host_shell": "Acceso shell al host (agente)"
         }
       },
       "repo": {
@@ -91,6 +92,21 @@
       "repo_generate_key": {
         "title": "Deploy key generada",
         "description": "Añade esta clave pública como Deploy Key en tu repositorio de GitHub (Settings → Deploy keys → Add deploy key) — marca \"Allow write access\" si quieres que un repo vacío se autoinicialice o que el agente pueda hacer push. Cuando la hayas añadido, pulsa Enviar para continuar.\n\n```\n{public_key}\n```"
+      },
+      "host_shell": {
+        "title": "Acceso shell al host de Home Assistant",
+        "description": "Permite al agente ejecutar comandos en el host por SSH (instalar/desinstalar addons e integraciones, editar configuración, CLI `ha`). Es ejecución de comandos SIN restricciones para quien pueda escribir al bot: déjalo desactivado salvo que lo quieras. Host: IP de la LAN del host de HA o el nombre del addon Terminal & SSH. Deja la ruta de clave vacía para generar una.",
+        "data": {
+          "enable_host_shell": "Activar acceso shell al host",
+          "host_shell_host": "Host SSH (IP o nombre)",
+          "host_shell_port": "Puerto SSH",
+          "host_shell_user": "Usuario SSH",
+          "host_shell_key_path": "Ruta a la clave privada (vacío = generar una)"
+        }
+      },
+      "host_shell_generate_key": {
+        "title": "Clave del agente generada",
+        "description": "Añade esta clave pública a las `authorized_keys` del addon Terminal & SSH (o del usuario SSH que configuraste) en el host. Cuando lo hayas hecho, pulsa Enviar para guardar.\\n\\n```\\n{public_key}\\n```"
       }
     },
     "error": {
@@ -100,7 +116,8 @@
       "telegram_bot_token_required": "Indica el token del bot de Telegram.",
       "telegram_allowed_chat_ids_required": "Indica al menos un chat_id autorizado.",
       "llm_api_key_required": "Indica la API key del LLM.",
-      "ssh_keygen_failed": "No se pudo generar la clave SSH: {error}"
+      "ssh_keygen_failed": "No se pudo generar la clave SSH: {error}",
+      "host_shell_host_required": "Indica el host SSH."
     }
   }
-}
+}\n

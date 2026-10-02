@@ -114,6 +114,24 @@ CONF_LANGUAGE = "language"
 CONF_AUDIO_API_BASE_URL = "audio_api_base_url"
 CONF_AUDIO_API_KEY = "audio_api_key"
 
+# Optional shell access for the agent to the Home Assistant host over SSH
+# (e.g. the "Terminal & SSH" add-on), so it can do what the REST API can't:
+# install/uninstall add-ons and integrations, edit config files, run the
+# `ha` CLI. Off by default — it is unrestricted command execution.
+CONF_ENABLE_HOST_SHELL = "enable_host_shell"
+CONF_HOST_SHELL_HOST = "host_shell_host"
+CONF_HOST_SHELL_PORT = "host_shell_port"
+CONF_HOST_SHELL_USER = "host_shell_user"
+CONF_HOST_SHELL_KEY_PATH = "host_shell_key_path"
+
+DEFAULT_ENABLE_HOST_SHELL = False
+DEFAULT_HOST_SHELL_HOST = ""
+DEFAULT_HOST_SHELL_PORT = 22
+DEFAULT_HOST_SHELL_USER = "root"
+HOST_SHELL_DEFAULT_TIMEOUT_SECONDS = 60
+HOST_SHELL_MAX_TIMEOUT_SECONDS = 300
+HOST_SHELL_MAX_OUTPUT_CHARS = 6000
+
 DEFAULT_ENABLE_AGENT = False
 DEFAULT_LLM_API_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_LLM_MODEL = "gpt-4o-mini"

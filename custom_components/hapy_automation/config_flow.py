@@ -25,8 +25,13 @@ from .const import (
     CONF_BRANCH,
     CONF_DRY_RUN,
     CONF_ENABLE_AGENT,
+    CONF_ENABLE_HOST_SHELL,
     CONF_ENABLE_WEBHOOK,
     CONF_ENTITY_INCLUDE_PATTERN,
+    CONF_HOST_SHELL_HOST,
+    CONF_HOST_SHELL_KEY_PATH,
+    CONF_HOST_SHELL_PORT,
+    CONF_HOST_SHELL_USER,
     CONF_LANGUAGE,
     CONF_LLM_API_BASE_URL,
     CONF_LLM_API_KEY,
@@ -45,6 +50,10 @@ from .const import (
     DEFAULT_BRANCH,
     DEFAULT_DRY_RUN,
     DEFAULT_ENABLE_AGENT,
+    DEFAULT_ENABLE_HOST_SHELL,
+    DEFAULT_HOST_SHELL_HOST,
+    DEFAULT_HOST_SHELL_PORT,
+    DEFAULT_HOST_SHELL_USER,
     DEFAULT_ENABLE_WEBHOOK,
     DEFAULT_ENTITY_INCLUDE_PATTERN,
     DEFAULT_LANGUAGE,
@@ -137,6 +146,37 @@ def _agent_schema(defaults: dict) -> vol.Schema:
             CONF_LANGUAGE, default=defaults.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
         ): str,
     })
+
+
+def _host_shell_schema(defaults: dict) -> vol.Schema:
+    return vol.Schema({
+        vol.Optional(
+            CONF_ENABLE_HOST_SHELL, default=defaults.get(CONF_ENABLE_HOST_SHELL, DEFAULT_ENABLE_HOST_SHELL)
+        ): bool,
+        vol.Optional(
+            CONF_HOST_SHELL_HOST, default=defaults.get(CONF_HOST_SHELL_HOST, DEFAULT_HOST_SHELL_HOST)
+        ): str,
+        vol.Optional(
+            CONF_HOST_SHELL_PORT, default=defaults.get(CONF_HOST_SHELL_PORT, DEFAULT_HOST_SHELL_PORT)
+        ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
+        vol.Optional(
+            CONF_HOST_SHELL_USER, default=defaults.get(CONF_HOST_SHELL_USER, DEFAULT_HOST_SHELL_USER)
+        ): str,
+        # Blank = generate one (the flow then shows the public key to add
+        # to the host's authorized_keys).
+        vol.Optional(CONF_HOST_SHELL_KEY_PATH, default=defaults.get(CONF_HOST_SHELL_KEY_PATH, '')): str,
+    })
+
+
+def _validate_host_shell(user_input: dict) -> dict:
+    errors = {}
+    if user_input.get(CONF_ENABLE_HOST_SHELL):
+        if not user_input.get(CONF_HOST_SHELL_HOST):
+            errors[CONF_HOST_SHELL_HOST] = 'host_shell_host_required'
+        key_path = user_input.get(CONF_HOST_SHELL_KEY_PATH)
+        if key_path and not os.path.isfile(key_path):
+            errors[CONF_HOST_SHELL_KEY_PATH] = 'ssh_key_path_not_found'
+    return errors
 
 
 async def _generate_key_for(hass, repo_data: dict) -> str:
@@ -241,7 +281,7 @@ class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
     # /api/config/config_entries/options/flow instead of just warning.
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        return self.async_show_menu(step_id='init', menu_options=['repo', 'agent'])
+        return self.async_show_menu(step_id='init', menu_options=['repo', 'agent', 'host_shell'])
 
     async def async_step_repo(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
@@ -297,4 +337,49 @@ class HapyAutomationOptionsFlow(config_entries.OptionsFlow):
                 return self.async_create_entry(title='', data={})
         return self.async_show_form(
             step_id='agent', data_schema=_agent_schema(current), errors=errors,
+        )
+
+    async def async_step_host_shell(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        current = {**self.config_entry.data, **self.config_entry.options}
+        if user_input is not None:
+            errors = _validate_host_shell(user_input)
+            if not errors:
+                data = dict(user_input)
+                if data.get(CONF_ENABLE_HOST_SHELL) and not data.get(CONF_HOST_SHELL_KEY_PATH):
+                    self._pending_host_shell_data = data
+                    return await self.async_step_host_shell_generate_key()
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data={**self.config_entry.data, **data}
+                )
+                return self.async_create_entry(title='', data={})
+        return self.async_show_form(
+            step_id='host_shell', data_schema=_host_shell_schema(current), errors=errors,
+        )
+
+    async def async_step_host_shell_generate_key(self, user_input: dict[str, Any] | None = None):
+        # Same two-visit shape as async_step_repo_generate_key: first visit
+        # generates and shows the public key, second (Submit, after the user
+        # has added it to the host's authorized_keys) saves the settings.
+        if user_input is not None:
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data={**self.config_entry.data, **self._pending_host_shell_data}
+            )
+            return self.async_create_entry(title='', data={})
+        key_path = self.hass.config.path('.ssh', 'hapy_automation_host_shell')
+        try:
+            public_key = await self.hass.async_add_executor_job(
+                generate_keypair, key_path, 'hapy-automation-host-shell'
+            )
+        except SshKeygenError as e:
+            current = {**self.config_entry.data, **self.config_entry.options}
+            return self.async_show_form(
+                step_id='host_shell', data_schema=_host_shell_schema(current),
+                errors={CONF_HOST_SHELL_KEY_PATH: 'ssh_keygen_failed'},
+                description_placeholders={'error': str(e)},
+            )
+        self._pending_host_shell_data[CONF_HOST_SHELL_KEY_PATH] = key_path
+        return self.async_show_form(
+            step_id='host_shell_generate_key', data_schema=vol.Schema({}),
+            description_placeholders={'public_key': public_key},
         )

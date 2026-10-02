@@ -229,6 +229,31 @@ a synthesized voice note). Tool access:
   authoring API, which the default system prompt tells the agent to consult
   before writing or editing code rather than relying on memory.
 - **`get_reload_status`**: same data as the diagnostic sensors.
+- **`run_host_command`** (opt-in, off by default): a shell on the Home
+  Assistant host over SSH, for what the API can't do — install/uninstall
+  add-ons and integrations, edit config files, run the `ha` CLI. See
+  **Host shell access** below.
+
+### Host shell access (optional, off by default)
+
+**Configure → Host shell**: enable it, give the SSH host (the host's LAN IP,
+or the Terminal & SSH add-on's name), port and user, and leave the key path
+empty to have the integration generate a keypair. The flow then shows the
+**public key — add it to `authorized_keys`** of that SSH user (for the
+Terminal & SSH add-on: its *authorized_keys* option) and press Submit. The
+tool is only offered to the LLM while this is enabled.
+
+This is **unrestricted command execution** as that SSH user for anyone who can
+message the bot, so the Telegram `chat_id` allowlist is the only gate — keep
+it tight. Safeguards that do exist: the agent is told to ask you before
+anything destructive or before restarting Home Assistant (a Core restart
+kills the running conversation), commands run non-interactively with a
+timeout (default 60 s, max 300 s), host keys are pinned on first connect,
+output is truncated, and every command is written to the Home Assistant log
+as a warning (`host shell (user@host): ...`). What it can reach depends on
+the SSH user: the official *Terminal & SSH* add-on gives the `ha` CLI and
+`/config`; full host/Docker access needs the add-on's protection mode off
+(or developer SSH on port 22222).
 
 There's no separate dry-run gate for the agent's own pushes — the safety net
 is the same atomic reload-with-rollback every other push already goes

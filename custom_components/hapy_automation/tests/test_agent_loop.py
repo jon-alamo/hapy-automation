@@ -24,6 +24,8 @@ class FakeLLM:
 
 
 class FakeTools:
+    schemas = []
+
     def __init__(self):
         self.dispatched = []
 

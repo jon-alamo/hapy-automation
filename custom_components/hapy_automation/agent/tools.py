@@ -12,7 +12,20 @@ import re
 
 from homeassistant.core import HomeAssistant
 
+from ..const import (
+    CONF_ENABLE_HOST_SHELL,
+    CONF_HOST_SHELL_HOST,
+    CONF_HOST_SHELL_KEY_PATH,
+    CONF_HOST_SHELL_PORT,
+    CONF_HOST_SHELL_USER,
+    DEFAULT_HOST_SHELL_PORT,
+    DEFAULT_HOST_SHELL_USER,
+    HOST_SHELL_DEFAULT_TIMEOUT_SECONDS,
+    HOST_SHELL_MAX_OUTPUT_CHARS,
+    HOST_SHELL_MAX_TIMEOUT_SECONDS,
+)
 from ..runtime.automations import AutomationHandler
+from .host_shell import HostShell
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +190,48 @@ TOOL_SCHEMAS = [
 ]
 
 
+# Only offered to the LLM when host shell access is enabled in the options —
+# see AgentTools.schemas. Described in the tool itself (not just the system
+# prompt) because a user's saved system prompt is a frozen copy of the default
+# from when they set the integration up and won't pick up new guidance.
+HOST_SHELL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "run_host_command",
+        "description": (
+            "Run a shell command on the Home Assistant host over SSH — full "
+            "access to what the REST API can't do: install/uninstall "
+            "add-ons and integrations (`ha addons install|uninstall ...`, "
+            "files under /config/custom_components), edit config files, run "
+            "the `ha` CLI (`ha core check`, `ha core logs`), check disk or "
+            "processes. Non-interactive (no stdin), so pass -y/--yes flags; "
+            "each call is a fresh shell. Returns exit_code, stdout, stderr "
+            "(long output is cut in the middle). Check exit_code — a command "
+            "that failed is not done. Ask the user first before anything "
+            "destructive or irreversible (uninstalling, deleting, "
+            "overwriting config) and before restarting Home Assistant or the "
+            "host: a restart of Home Assistant Core kills this conversation "
+            "mid-task, so say so beforehand and do nothing after it. "
+            "Validate config (`ha core check`) before suggesting a restart."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "command": {"type": "string"},
+                "timeout_seconds": {
+                    "type": "integer",
+                    "description": (
+                        f"default {HOST_SHELL_DEFAULT_TIMEOUT_SECONDS}, max "
+                        f"{HOST_SHELL_MAX_TIMEOUT_SECONDS}; the command is killed after this"
+                    ),
+                },
+            },
+            "required": ["command"],
+        },
+    },
+}
+
+
 def _binding_summary() -> dict:
     """Ground truth for "did the automation I just wrote actually attach to
     anything real" — reload_ok alone can't answer that (see
@@ -204,9 +259,20 @@ class AgentTools:
         self.hass = hass
         self.coordinator = coordinator
 
+    def _host_shell_enabled(self) -> bool:
+        return bool(self.coordinator.entry.data.get(CONF_ENABLE_HOST_SHELL))
+
+    @property
+    def schemas(self) -> list[dict]:
+        """Read per call, not cached: toggling the option takes effect on
+        the next message without reloading the integration."""
+        if self._host_shell_enabled():
+            return TOOL_SCHEMAS + [HOST_SHELL_SCHEMA]
+        return TOOL_SCHEMAS
+
     async def dispatch(self, name: str, arguments: dict) -> str:
         handler = getattr(self, f"_tool_{name}", None)
-        if handler is None:
+        if handler is None or (name == 'run_host_command' and not self._host_shell_enabled()):
             return json.dumps({"error": f"unknown tool {name}"})
         try:
             result = await handler(**arguments)
@@ -379,3 +445,29 @@ class AgentTools:
             with open(_API_REFERENCE_PATH, 'r', encoding='utf-8') as f:
                 return f.read()
         return {"reference": await self.hass.async_add_executor_job(_read)}
+
+    # -- Home Assistant host (SSH) -------------------------------------------
+
+    async def _tool_run_host_command(
+            self, command: str, timeout_seconds: int = HOST_SHELL_DEFAULT_TIMEOUT_SECONDS
+    ) -> dict:
+        data = self.coordinator.entry.data
+        host = data.get(CONF_HOST_SHELL_HOST)
+        key_path = data.get(CONF_HOST_SHELL_KEY_PATH)
+        if not host or not key_path:
+            raise ToolError(
+                "host shell is enabled but host/key are not configured — "
+                "finish it in the integration options (Host shell)"
+            )
+        if not command.strip():
+            raise ToolError("empty command")
+        timeout = max(1, min(int(timeout_seconds), HOST_SHELL_MAX_TIMEOUT_SECONDS))
+        shell = HostShell(
+            host=host,
+            port=int(data.get(CONF_HOST_SHELL_PORT) or DEFAULT_HOST_SHELL_PORT),
+            user=data.get(CONF_HOST_SHELL_USER) or DEFAULT_HOST_SHELL_USER,
+            key_path=key_path,
+            known_hosts_path=self.hass.config.path('.ssh', 'hapy_automation_known_hosts'),
+            max_output_chars=HOST_SHELL_MAX_OUTPUT_CHARS,
+        )
+        return await shell.run(command, timeout)
