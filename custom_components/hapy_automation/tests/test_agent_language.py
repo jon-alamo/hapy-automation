@@ -61,6 +61,16 @@ def test_language_directive_present_even_with_custom_system_prompt():
     assert "Responde SIEMPRE en español" in prompt
 
 
+def test_code_automations_only_on_explicit_request_directive_always_present():
+    """One-off requests ("turn on the light") must act on entities directly,
+    not get turned into committed automation code. Appended like the language
+    directive so a saved/customized system prompt gets it too."""
+    for runner in (_make_runner(), _make_runner({"system_prompt": "Eres un asistente muy breve."})):
+        prompt = runner._system_prompt()
+        assert "SOLO se implementan cuando el usuario las pide explícitamente" in prompt
+        assert "call_service" in prompt
+
+
 def test_describe_error_never_returns_a_blank_message():
     """Found for real via Telegram: str(asyncio.TimeoutError()) is empty,
     so "Error del agente: {e}" showed the user nothing after the colon —

@@ -114,7 +114,9 @@ TOOL_SCHEMAS = [
         "function": {
             "name": "write_automation_file",
             "description": (
-                "Write (create or overwrite) a file in the automations repo, by "
+                "Write (create or overwrite) a file in the automations repo — ONLY "
+                "when the user explicitly asked for a permanent automation; "
+                "one-off requests are done with call_service instead. By "
                 "path relative to the repo root. Does not commit or push by "
                 "itself — call git_commit_and_push afterwards. If this creates a "
                 "new top-level module directly under automations/ (e.g. "

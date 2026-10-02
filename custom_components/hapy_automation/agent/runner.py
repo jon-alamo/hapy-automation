@@ -160,6 +160,21 @@ class AgentRunner:
             "sin excepción, sea cual sea el idioma en el que te escriban "
             "o hablen — nunca cambies de idioma a mitad de conversación."
         )
+        # Same mechanism as the language directive: appended, so it also
+        # applies to a saved system prompt (a frozen copy of whatever the
+        # default said at setup time) rather than only to new installs.
+        directive += (
+            "\n\nLas automatizaciones en código (escribir/modificar ficheros "
+            "del repositorio y hacer commit/push) SOLO se implementan cuando "
+            "el usuario las pide explícitamente (p.ej. \"crea una "
+            "automatización que…\", \"cuando X haz Y siempre\"). Para "
+            "cualquier otra petición — encender una luz, cambiar la "
+            "temperatura, activar una escena, ajustar un helper — actúa "
+            "directamente sobre las entidades de Home Assistant con "
+            "call_service, de forma efímera: sin tocar el repositorio ni "
+            "dejar nada permanente. Si dudas de si quiere algo puntual o una "
+            "automatización permanente, pregúntalo antes de escribir código."
+        )
         if self.entry.data.get(CONF_ENABLE_HOST_SHELL):
             # Same reasoning as the language directive: appended so it applies
             # even to a saved/customized system prompt that predates this.
